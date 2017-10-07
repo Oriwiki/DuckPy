@@ -6,6 +6,7 @@ from datetime import datetime
 
 string = alphas + srange(r"[\0xac00-\0xd7a3]") + " "
 nowiki = []
+footnote = {}
 
 def text_foramting(text):
     bold = QuotedString("'''")
@@ -235,8 +236,36 @@ def text_closure(text):
             text = text.replace('{{|' + n + '|}}', '<table class="wiki-closure"><tbody><tr><td><p>' + n + '</p></td></tr></tbody></table>')
     return text
     
+def text_reference(text):
+    greet = QuotedString("[*", endQuoteChar="]", escQuote="]")
+    for i in greet.searchString(text):
+        if len(i) == 0:
+            return False
+        for n in i:
+            old_n = n
+            n = text_reference(n)
+            n_split = n.split(" ", 1)
+            if n_split[0] == "":
+                footnote[len(footnote) + 1] = n_split[1]
+                
+                text = text.replace('[*' + old_n + ']', '<a class="wiki-fn-content" title="' + n_split[1] + '" href="#fn-' + str(len(footnote)) + '"><span id="rfn-' + str(len(footnote)) + '" class="target"></span>[' + str(len(footnote)) + ']</a>')
+            elif len(n_split) == 1:
+                footnote[len(footnote) + 1] = ""
+                
+                text = text.replace('[*' + old_n + ']', '<a class="wiki-fn-content" title="' + footnote[n_split[0]] + '" href="#fn-' + n_split[0] + '"><span id="rfn-' + str(len(footnote)) + '" class="target"></span>[' + n_split[0] + ']</a>')
+            else:
+                footnote[n_split[0]] = n_split[1]
+                
+                text = text.replace('[*' + old_n + ']', '<a class="wiki-fn-content" title="' + n_split[1] + '" href="#fn-' + n_split[0] + '"><span id="rfn-' + str(len(footnote)) + '" class="target"></span>[' + n_split[0] + ']</a>')
+    
+    return text
 text = """
-{{|내용|}}
+
+본문[* 각주의 내용]
+본문[*A 문자가 다른 각주]
+본문[*B 같은 각주를 반복]
+본문[*B]
+본문[* 각주 안의 [* 각주]]
 """
 text = text_nowiki(text)
 text = text_foramting(text)
@@ -251,6 +280,7 @@ text = text_html(text)
 text = text_div(text)
 text = text_syntax(text)
 text = text_closure(text)
+text = text_reference(text)
 
 text = text_nowiki_print(text)
 print(text)
