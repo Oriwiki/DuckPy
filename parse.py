@@ -259,13 +259,36 @@ def text_reference(text):
                 text = text.replace('[*' + old_n + ']', '<a class="wiki-fn-content" title="' + n_split[1] + '" href="#fn-' + n_split[0] + '"><span id="rfn-' + str(len(footnote)) + '" class="target"></span>[' + n_split[0] + ']</a>')
     
     return text
+    
+def text_blockquote(text):
+    line = text.split("\n")
+    is_start = False
+    new_line = ""
+    #print(line)
+    for each_line in line:
+        if each_line.startswith('>'):
+            each_line = text_blockquote(each_line[1:].lstrip())
+            if is_start == False:
+                new_line += '<blockquote class="wiki-quote"><p>'+ "\n" + each_line + "\n"
+                is_start = True
+            else:
+                new_line += each_line + "\n"
+        else:
+            if is_start == True:
+                new_line += '</p></blockquote>' + "\n"
+                is_start = False
+            else:
+                new_line += each_line + "\n"
+    if len(line) == 1:
+        if is_start == True:
+                new_line += '</p></blockquote>' + "\n"
+                is_start = False
+    return new_line
 text = """
+후후 밍나
 
-본문[* 각주의 내용]
-본문[*A 문자가 다른 각주]
-본문[*B 같은 각주를 반복]
-본문[*B]
-본문[* 각주 안의 [* 각주]]
+얏빠리나
+하하핳
 """
 text = text_nowiki(text)
 text = text_foramting(text)
@@ -281,6 +304,7 @@ text = text_div(text)
 text = text_syntax(text)
 text = text_closure(text)
 text = text_reference(text)
+text = text_blockquote(text)
 
 text = text_nowiki_print(text)
 print(text)
