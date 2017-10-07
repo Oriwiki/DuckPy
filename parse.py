@@ -228,9 +228,15 @@ def text_syntax(text):
             
     return text
     
+def text_closure(text):
+    greet = QuotedString("{{|", endQuoteChar="|}}")
+    for i in greet.searchString(text):
+        for n in i:
+            text = text.replace('{{|' + n + '|}}', '<table class="wiki-closure"><tbody><tr><td><p>' + n + '</p></td></tr></tbody></table>')
+    return text
+    
 text = """
-{{{#!wiki style="border:1px solid gray;border-top:5px solid orange;padding:12px"
-{{{+1 여기에 제목을 넣어 주세요.}}}[br][br]여기에 내용을 넣어 주세요.}}}
+{{|내용|}}
 """
 text = text_nowiki(text)
 text = text_foramting(text)
@@ -244,6 +250,7 @@ text = text_folding(text)
 text = text_html(text)
 text = text_div(text)
 text = text_syntax(text)
+text = text_closure(text)
 
 text = text_nowiki_print(text)
 print(text)
