@@ -342,31 +342,32 @@ def text_footnote():
 
 
 input = """
-본문[* 각주의 내용]
-본문[*A 문자가 다른 각주]
-본문[*B 같은 각주를 반복]
-본문[*B]
-본문[* 각주 안의 [* 각주]]
+	
+{{{#!wiki style="border:1px solid gray;border-top:5px solid orange;padding:12px"
+{{{+1 여기에 제목을 넣어 주세요.}}}[br][br]여기에 내용을 넣어 주세요.}}}
 """
 text = ""
 nowiki = []
 footnote = collections.OrderedDict()
 footnote_i = 0
 
+input = text_blockquote(input)
+input = text_folding(input)
+input = text_div(input)
+input = text_syntax(input)
 
 for line in input.split("\n"):
     line = text_nowiki(line)
     line = text_link(line)
+    line = text_foramting(line)
     line = text_anchor(line)
     line = text_youtube(line)
     line = text_reference(line)
     line = text_macro(line)
-    line = text_folding(line)
     line = text_html(line)
-    line = text_div(line)
-    line = text_syntax(line)
+    
     line = text_closure(line)
-    line = text_blockquote(line)
+    
     line = text_comment(line)
     line = text_hr(line)
     line = text_indent(line)
