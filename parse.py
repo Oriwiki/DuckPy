@@ -293,12 +293,19 @@ def text_comment(text):
        
     return text
 
+def text_hr(text):
+    text = re.sub(r'^\-{4,9}$', '<hr>', text, 0, re.M)
+    return text
+    
 text = """
-본문
-##주석입니다.
-본문
-##주석은 페이지에 출력되지 않습니다.
-본문
+---
+----
+-----
+------
+-------
+--------
+---------
+----------
 """
 text = text_nowiki(text)
 text = text_link(text)
@@ -313,6 +320,7 @@ text = text_closure(text)
 text = text_reference(text)
 text = text_blockquote(text)
 text = text_comment(text)
+text = text_hr(text)
 
 text = text_nowiki_print(text)
 
