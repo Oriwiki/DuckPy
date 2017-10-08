@@ -4,8 +4,6 @@ import re
 import time
 from datetime import datetime
 import collections
-import dominate
-from dominate.tags import ul, li
 
 
 def text_foramting(text):
