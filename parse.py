@@ -4,6 +4,8 @@ import re
 import time
 from datetime import datetime
 import collections
+import dominate
+from dominate.tags import ul, li
 
 
 def text_foramting(text):
@@ -197,7 +199,6 @@ def text_div(text):
     greet = QuotedString("{{{#!wiki ", endQuoteChar="}}}", escQuote="}}}", multiline=True)
     for i in greet.searchString(text):
         for n in i:
-            #print(n)
             n_split = n.split("\n")
             is_first = True
             for a in n_split:
@@ -340,15 +341,48 @@ def text_footnote():
         del(footnote[key])
     return s + "</div>"
 
+def text_list(text):
+    line = text.split("\n")
+    is_start = False
+    new_line = ""
+    list_n = 0
+    for each_line in line:
+        if each_line.lstrip().startswith('*'):
+            now_len = len(each_line) - len(each_line.lstrip())
+            if is_start == False:
+                new_line += "<ul>\n<li>" + each_line.lstrip()[1:] + "\n"
+                is_start = True
+            elif now_len > pro_len:
+                new_line += "<ul>\n<li>" + each_line.lstrip()[1:] + "\n"
+                list_n += 1
+            elif now_len < pro_len:
+                for r in range(0, list_n):
+                    new_line += "</li></ul>"
+                    
+                new_line += "<li>" + each_line.lstrip()[1:] + "\n"
+                list_n -= 1
+            else:
+                new_line += "</li>\n<li>" + each_line.lstrip()[1:] + "\n"
+                
+            pro_len = now_len
+        else:
+            if is_start == True:
+                for r in range(0, list_n):
+                    new_line += "</li></ul>" + each_line + "\n"
+                is_start = False
+            else:
+                new_line += each_line + "\n"
+    
+    
+    return new_line
+    
 
 input = """
-	
-들여쓰지 않은 텍스트
- 들여쓴 텍스트 (단계 1)
-  들여쓴 텍스트 (단계 2)
-   들여쓴 텍스트 (단계 3)
- 들여쓴 텍스트 (단계 1)
-들여쓰지 않은 텍스트
+ * 후
+  * 해치웠나..?
+  * 손나
+  
+아 힘들어
 """
 text = ""
 nowiki = []
@@ -359,6 +393,7 @@ input = text_blockquote(input)
 input = text_folding(input)
 input = text_div(input)
 input = text_syntax(input)
+input = text_list(input)
 input = text_indent(input)
 
 
@@ -377,8 +412,8 @@ for line in input.split("\n"):
     line = text_comment(line)
     line = text_hr(line)
 
-    line = text_nowiki_print(line)
-    text += line
+    line = text_nowiki(line)
+    text += line + "\n"
 
 text += text_footnote()
 print(text)
