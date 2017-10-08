@@ -1,4 +1,4 @@
-from pyparsing import Word, srange, alphas, QuotedString
+from pyparsing import Word, srange, alphas, QuotedString, LineStart, restOfLine
 from urllib.parse   import quote
 import re
 import time
@@ -285,16 +285,20 @@ def text_blockquote(text):
             new_line += '</p></blockquote>' + "\n"
             is_start = False
     return new_line
+    
+def text_comment(text):
+    for t in (LineStart() + '##' + restOfLine).searchString(text):
+        for n in t:
+            text = text.replace('##' + n, '')
+       
+    return text
+
 text = """
-{{{#blue {{{test}}}}}}
->{{{{{{+2 {{{#red test}}} test}}}}}}
-{{{#green {{{test}}}}}}
-
-가나다
-
->인용문입니다.
->>인용문 안의 인용문 입니다.
->>>인용문 안의 인용문 안의 인용문 입니다.
+본문
+##주석입니다.
+본문
+##주석은 페이지에 출력되지 않습니다.
+본문
 """
 text = text_nowiki(text)
 text = text_link(text)
@@ -307,8 +311,8 @@ text = text_div(text)
 text = text_syntax(text)
 text = text_closure(text)
 text = text_reference(text)
-
 text = text_blockquote(text)
+text = text_comment(text)
 
 text = text_nowiki_print(text)
 
