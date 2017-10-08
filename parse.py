@@ -5,9 +5,6 @@ import time
 from datetime import datetime
 import collections
 
-string = alphas + srange(r"[\0xac00-\0xd7a3]") + " "
-nowiki = []
-footnote = collections.OrderedDict()
 
 def text_foramting(text):
     bold = QuotedString("'''")
@@ -68,7 +65,6 @@ def text_nowiki(text):
         for n in i:
             if len(nowiki) > 0 and n == nowiki[len(nowiki) - 1]:
                 return text
-            #print(nowiki)
             if n.startswith(('#', '+')) == False:
                 text = text.replace("{{{" + n + "}}}", "<nowiki" + str(len(nowiki)) + " />")
                 nowiki.append(n)
@@ -151,8 +147,10 @@ def text_macro(text):
     
     text = text.replace('[br]', '<br />')
     
-    text = text.replace('[각주]', text_footnote())
-    text = text.replace('[footnote]', text_footnote())
+    if "[각주]" in text:
+        text = text.replace('[각주]', text_footnote())
+    if "[footnote]" in text:
+        text = text.replace('[footnote]', text_footnote())
     
     greet  = QuotedString("[age(", endQuoteChar=")]")
     for i in greet.searchString(text):
@@ -248,21 +246,23 @@ def text_reference(text):
         if len(i) == 0:
             return False
         for n in i:
+            global footnote_i
             old_n = n
             n = text_reference(n)
+            footnote_i += 1
+
             n_split = n.split(" ", 1)
             if n_split[0] == "":
-                footnote[len(footnote) + 1] = n_split[1]
-                
-                text = text.replace('[*' + old_n + ']', '<a class="wiki-fn-content" title="' + n_split[1] + '" href="#fn-' + str(len(footnote)) + '"><span id="rfn-' + str(len(footnote)) + '" class="target"></span>[' + str(len(footnote)) + ']</a>')
+                footnote[footnote_i] = n_split[1]
+                text = text.replace('[*' + old_n + ']', '<a class="wiki-fn-content" title="' + n_split[1] + '" href="#fn-' + str(footnote_i) + '"><span id="rfn-' + str(footnote_i) + '" class="target"></span>[' + str(footnote_i) + ']</a>')
             elif len(n_split) == 1:
-                footnote[len(footnote) + 1] = ""
+                footnote[footnote_i] = ""
                 
-                text = text.replace('[*' + old_n + ']', '<a class="wiki-fn-content" title="' + footnote[n_split[0]] + '" href="#fn-' + n_split[0] + '"><span id="rfn-' + str(len(footnote)) + '" class="target"></span>[' + n_split[0] + ']</a>')
+                text = text.replace('[*' + old_n + ']', '<a class="wiki-fn-content" title="' + footnote[n_split[0]] + '" href="#fn-' + n_split[0] + '"><span id="rfn-' + str(footnote_i) + '" class="target"></span>[' + n_split[0] + ']</a>')
             else:
                 footnote[n_split[0]] = n_split[1]
                 
-                text = text.replace('[*' + old_n + ']', '<a class="wiki-fn-content" title="' + n_split[1] + '" href="#fn-' + n_split[0] + '"><span id="rfn-' + str(len(footnote)) + '" class="target"></span>[' + n_split[0] + ']</a>')
+                text = text.replace('[*' + old_n + ']', '<a class="wiki-fn-content" title="' + n_split[1] + '" href="#fn-' + n_split[0] + '"><span id="rfn-' + str(footnote_i) + '" class="target"></span>[' + n_split[0] + ']</a>')
     
     return text
     
@@ -326,46 +326,53 @@ def text_indent(text):
     return new_line
     
 def text_footnote():
-    text = '<div class="wiki-macro-footnote">' + "\n"
+    s = '<div class="wiki-macro-footnote">' + "\n"
     
     i = 0
+    d_footnote = []
     for key, value in footnote.items():
         i += 1
         if value != "":
-            text += '<span class="footnote-list"><span id="fn-' + str(key) + '" class="target"></span><a href="#rfn-' + str(i) + '">[' + str(key) + ']</a>' + value + '</span>' + "\n"
-            
-    footnote_init()
-    return text + "</div>"
+            s += '<span class="footnote-list"><span id="fn-' + str(key) + '" class="target"></span><a href="#rfn-' + str(i) + '">[' + str(key) + ']</a>' + value + '</span>' + "\n"
+        d_footnote.append(key)
+    
+    for key in d_footnote:
+        del(footnote[key])
+    return s + "</div>"
 
-def footnote_init():
-    global footnote
-    footnote = collections.OrderedDict()
 
-text = """
+input = """
 본문[* 각주의 내용]
-본문[* 각주의 내용]
-[각주]
-본문[* 각주의 내용]
-
+본문[*A 문자가 다른 각주]
+본문[*B 같은 각주를 반복]
+본문[*B]
+본문[* 각주 안의 [* 각주]]
 """
-text = text_nowiki(text)
-text = text_link(text)
-text = text_anchor(text)
-text = text_youtube(text)
-text = text_reference(text)
-text = text_macro(text)
-text = text_folding(text)
-text = text_html(text)
-text = text_div(text)
-text = text_syntax(text)
-text = text_closure(text)
-text = text_blockquote(text)
-text = text_comment(text)
-text = text_hr(text)
-text = text_indent(text)
+text = ""
+nowiki = []
+footnote = collections.OrderedDict()
+footnote_i = 0
 
-text = text_nowiki_print(text)
+
+for line in input.split("\n"):
+    line = text_nowiki(line)
+    line = text_link(line)
+    line = text_anchor(line)
+    line = text_youtube(line)
+    line = text_reference(line)
+    line = text_macro(line)
+    line = text_folding(line)
+    line = text_html(line)
+    line = text_div(line)
+    line = text_syntax(line)
+    line = text_closure(line)
+    line = text_blockquote(line)
+    line = text_comment(line)
+    line = text_hr(line)
+    line = text_indent(line)
+
+    line = text_nowiki_print(line)
+    text += line
 
 text += text_footnote()
-
 print(text)
