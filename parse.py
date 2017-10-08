@@ -343,8 +343,12 @@ def text_footnote():
 
 input = """
 	
-{{{#!wiki style="border:1px solid gray;border-top:5px solid orange;padding:12px"
-{{{+1 여기에 제목을 넣어 주세요.}}}[br][br]여기에 내용을 넣어 주세요.}}}
+들여쓰지 않은 텍스트
+ 들여쓴 텍스트 (단계 1)
+  들여쓴 텍스트 (단계 2)
+   들여쓴 텍스트 (단계 3)
+ 들여쓴 텍스트 (단계 1)
+들여쓰지 않은 텍스트
 """
 text = ""
 nowiki = []
@@ -355,6 +359,8 @@ input = text_blockquote(input)
 input = text_folding(input)
 input = text_div(input)
 input = text_syntax(input)
+input = text_indent(input)
+
 
 for line in input.split("\n"):
     line = text_nowiki(line)
@@ -370,7 +376,6 @@ for line in input.split("\n"):
     
     line = text_comment(line)
     line = text_hr(line)
-    line = text_indent(line)
 
     line = text_nowiki_print(line)
     text += line
