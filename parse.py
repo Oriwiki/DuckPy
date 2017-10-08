@@ -48,35 +48,37 @@ def text_foramting(text):
     return text
                 
 def text_sizing(text):
-    greet = QuotedString("{{{+", endQuoteChar="}}}")
+    n_split = text[1:].split(" ", 1)
+    if 1 <= int(n_split[0]) <= 5:
+        return '<span class="wiki-size size-' + n_split[0] + '">' + n_split[1] + '</span>'
     
-    for i in greet.searchString(text):
-        for n in i:
-            n_split = n.split(" ", 1)
-            if 1 <= int(n_split[0]) <= 5:
-                text = text.replace("{{{+" + n + "}}}", '<span class="wiki-size size-' + n_split[0] + '">' + n_split[1] + '</span>')
     return text
 
 def text_coloring(text):
-    greet = QuotedString("{{{#", endQuoteChar="}}}")
-    for i in greet.searchString(text):
-        for n in i:
-            n_split = n.split(" ", 1)
-            # hex 코드 구별
-            if re.search(r'^(?:[0-9a-fA-F]{3}){1,2}$', n_split[0]):
-                text = text.replace("{{{#" + n + "}}}", '<span class="wiki-color" style="color: #' + n_split[0] + '">' + n_split[1] + '</span>')
-            elif n_split[0].startswith("!") == False:
-                text = text.replace("{{{#" + n + "}}}", '<span class="wiki-color" style="color: ' + n_split[0] + '">' + n_split[1] + '</span>')
-    return text
+    n_split = text[1:].split(" ", 1)
+    if re.search(r'^(?:[0-9a-fA-F]{3}){1,2}$', n_split[0]):
+        return '<span class="wiki-color" style="color: #' + n_split[0] + '">' + n_split[1] + '</span>'
+    elif n_split[0].startswith("!") == False:
+        return '<span class="wiki-color" style="color: ' + n_split[0] + '">' + n_split[1] + '</span>'
 
 def text_nowiki(text):
-    greet = QuotedString("{{{", endQuoteChar="}}}")
+    greet = QuotedString("{{{", endQuoteChar="}}}", escQuote="}}}")
     for i in greet.searchString(text):
         for n in i:
-            if n.startswith(('#', '+')):
+            if len(nowiki) > 0 and n == nowiki[len(nowiki) - 1]:
                 return text
-            text = text.replace("{{{" + n + "}}}", "<nowiki" + str(len(nowiki)) + " />")
-            nowiki.append(n)
+            #print(nowiki)
+            if n.startswith(('#', '+')) == False:
+                text = text.replace("{{{" + n + "}}}", "<nowiki" + str(len(nowiki)) + " />")
+                nowiki.append(n)
+            old_n = n
+            n = text_nowiki(n)
+            n_split = n.split(" ", 1)
+            # 텍스트 색상, 크기
+            if n.startswith('#'):
+                text = text.replace("{{{" + old_n + "}}}", text_coloring(n))
+            elif n.startswith('+'):
+                text = text.replace("{{{" + old_n + "}}}", text_sizing(n))
     return text
 
 def text_nowiki_print(text):
@@ -264,7 +266,6 @@ def text_blockquote(text):
     line = text.split("\n")
     is_start = False
     new_line = ""
-    #print(line)
     for each_line in line:
         if each_line.startswith('>'):
             each_line = text_blockquote(each_line[1:].lstrip())
@@ -275,25 +276,27 @@ def text_blockquote(text):
                 new_line += each_line + "\n"
         else:
             if is_start == True:
-                new_line += '</p></blockquote>' + "\n"
+                new_line += '</p></blockquote>' + "\n" + each_line + "\n"
                 is_start = False
             else:
                 new_line += each_line + "\n"
     if len(line) == 1:
         if is_start == True:
-                new_line += '</p></blockquote>' + "\n"
-                is_start = False
+            new_line += '</p></blockquote>' + "\n"
+            is_start = False
     return new_line
 text = """
-후후 밍나
+{{{#blue {{{test}}}}}}
+>{{{{{{+2 {{{#red test}}} test}}}}}}
+{{{#green {{{test}}}}}}
 
-얏빠리나
-하하핳
+가나다
+
+>인용문입니다.
+>>인용문 안의 인용문 입니다.
+>>>인용문 안의 인용문 안의 인용문 입니다.
 """
 text = text_nowiki(text)
-text = text_foramting(text)
-text = text_sizing(text)
-text = text_coloring(text)
 text = text_link(text)
 text = text_anchor(text)
 text = text_youtube(text)
@@ -304,7 +307,9 @@ text = text_div(text)
 text = text_syntax(text)
 text = text_closure(text)
 text = text_reference(text)
+
 text = text_blockquote(text)
 
 text = text_nowiki_print(text)
+
 print(text)
