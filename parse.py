@@ -3,10 +3,11 @@ from urllib.parse   import quote
 import re
 import time
 from datetime import datetime
+import collections
 
 string = alphas + srange(r"[\0xac00-\0xd7a3]") + " "
 nowiki = []
-footnote = {}
+footnote = collections.OrderedDict()
 
 def text_foramting(text):
     bold = QuotedString("'''")
@@ -149,6 +150,9 @@ def text_macro(text):
     text = text.replace('[datetime]', s)
     
     text = text.replace('[br]', '<br />')
+    
+    text = text.replace('[각주]', text_footnote())
+    text = text.replace('[footnote]', text_footnote())
     
     greet  = QuotedString("[age(", endQuoteChar=")]")
     for i in greet.searchString(text):
@@ -321,27 +325,47 @@ def text_indent(text):
             is_start = False
     return new_line
     
-text = """
+def text_footnote():
+    text = '<div class="wiki-macro-footnote">' + "\n"
+    
+    i = 0
+    for key, value in footnote.items():
+        i += 1
+        if value != "":
+            text += '<span class="footnote-list"><span id="fn-' + str(key) + '" class="target"></span><a href="#rfn-' + str(i) + '">[' + str(key) + ']</a>' + value + '</span>' + "\n"
+            
+    footnote_init()
+    return text + "</div>"
 
-   들여쓴 텍스트 (단계 3)
+def footnote_init():
+    global footnote
+    footnote = collections.OrderedDict()
+
+text = """
+본문[* 각주의 내용]
+본문[* 각주의 내용]
+[각주]
+본문[* 각주의 내용]
 
 """
 text = text_nowiki(text)
 text = text_link(text)
 text = text_anchor(text)
 text = text_youtube(text)
+text = text_reference(text)
 text = text_macro(text)
 text = text_folding(text)
 text = text_html(text)
 text = text_div(text)
 text = text_syntax(text)
 text = text_closure(text)
-text = text_reference(text)
 text = text_blockquote(text)
 text = text_comment(text)
 text = text_hr(text)
 text = text_indent(text)
 
 text = text_nowiki_print(text)
+
+text += text_footnote()
 
 print(text)
