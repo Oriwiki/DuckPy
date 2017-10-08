@@ -297,15 +297,34 @@ def text_hr(text):
     text = re.sub(r'^\-{4,9}$', '<hr>', text, 0, re.M)
     return text
     
+def text_indent(text):
+    line = text.split("\n")
+    is_start = False
+    new_line = ""
+    for each_line in line:
+        if each_line.startswith(' '):
+            each_line = text_indent(each_line[1:])
+            if is_start == False:
+                new_line += '<div class="wiki-indent"><p>'+ "\n" + each_line + "\n"
+                is_start = True
+            else:
+                new_line += each_line + "\n"
+        else:
+            if is_start == True:
+                new_line += '</p></div>' + "\n" + each_line + "\n"
+                is_start = False
+            else:
+                new_line += each_line + "\n"
+    if len(line) == 1:
+        if is_start == True:
+            new_line += '</p></div>' + "\n"
+            is_start = False
+    return new_line
+    
 text = """
----
-----
------
-------
--------
---------
----------
-----------
+
+   들여쓴 텍스트 (단계 3)
+
 """
 text = text_nowiki(text)
 text = text_link(text)
@@ -321,6 +340,7 @@ text = text_reference(text)
 text = text_blockquote(text)
 text = text_comment(text)
 text = text_hr(text)
+text = text_indent(text)
 
 text = text_nowiki_print(text)
 
