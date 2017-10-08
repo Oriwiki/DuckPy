@@ -410,7 +410,7 @@ for line in input.split("\n"):
     line = text_comment(line)
     line = text_hr(line)
 
-    line = text_nowiki(line)
+    line = text_nowiki_print(line)
     text += line + "\n"
 
 text += text_footnote()
