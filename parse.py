@@ -444,16 +444,55 @@ def text_orderd_list(text):
     
     return new_line
     
+def text_table(text):
+    line = text.split("\n")
+    new_line = ""
+    is_start = False
+
+    line_i = 0
+    table_line_n = []
+    tr_list = []
+    for each_line in line:
+        if each_line.startswith('||'):
+            td_list = each_line.split('||')
+            del(td_list[0], td_list[len(td_list) - 1])
+            tr_list.append(td_list)
+            table_line_n.append(line_i)
+        line_i += 1   
+
+        
+    if len(table_line_n) > 0:
+        
+        for each_table_line_n in table_line_n[1:]:
+            del(line[each_table_line_n])
+        
+        print(tr_list)
+        tr = ""
+        for each_tr in tr_list:
+            tr += '<tr>' + "\n"
+            for td in each_tr:
+                tr += '<td><p>' + td + '</p></td>'  + "\n"
+            tr += '</tr>' + "\n"
+        
+        table = '<div class="wiki-table-wrap">' + "\n" + '<table class="wiki-table" style="">' + "\n" + '<tbody>' + "\n" + tr + "</tbody>\n</table>\n</div>"
+        
+        line[table_line_n[0]] = table
+        
+        for each_line in line:
+            new_line += each_line + "\n"
+        
+        
+        return new_line
+
+        
+    else:
+        return text
+        
 
 input = """ 
- 1. 리스트1
-  1. 리스트 2
-  1. 리스트 3
-   1. 리스트 4
- 1. 리스트 5 
- 
- a.#20 리스트 7
- a. 리스트 8
+|| 한 || 칸 || 짜 || 리 ||
+|||| 두칸 |||| 짜리 ||
+가나다
 """
 text = ""
 nowiki = []
@@ -467,6 +506,7 @@ input = text_div(input)
 input = text_syntax(input)
 input = text_unorderd_list(input)
 input = text_orderd_list(input)
+input = text_table(input)
 input = text_indent(input)
 
 # singleline
