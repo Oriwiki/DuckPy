@@ -294,7 +294,7 @@ def text_blockquote(text):
     line = text.split("\n")
     is_start = False
     new_line = ""
-    for each_line in line:
+    for key, each_line in enumerate(line):
         if each_line.startswith('>'):
             each_line = text_blockquote(each_line[1:].lstrip())
             if is_start == False:
@@ -307,7 +307,10 @@ def text_blockquote(text):
                 new_line += '</p></blockquote>' + "\n" + each_line + "\n"
                 is_start = False
             else:
-                new_line += each_line + "\n"
+                new_line += each_line
+                if key < len(line) - 1:
+                    new_line += "\n"
+                 
     if len(line) == 1:
         if is_start == True:
             new_line += '</p></blockquote>' + "\n"
@@ -329,7 +332,7 @@ def text_indent(text):
     line = text.split("\n")
     is_start = False
     new_line = ""
-    for each_line in line:
+    for key, each_line in enumerate(line):
         if each_line.startswith(' '):
             each_line = text_indent(each_line[1:])
             if is_start == False:
@@ -342,7 +345,9 @@ def text_indent(text):
                 new_line += '</p></div>' + "\n" + each_line + "\n"
                 is_start = False
             else:
-                new_line += each_line + "\n"
+                new_line += each_line
+                if key < len(line) - 1:
+                    new_line += "\n"
     if len(line) == 1:
         if is_start == True:
             new_line += '</p></div>' + "\n"
@@ -372,7 +377,7 @@ def text_unorderd_list(text):
     is_start = False
     new_line = ""
     list_n = 0
-    for each_line in line:
+    for key, each_line in enumerate(line):
         if each_line.lstrip().startswith('*'):
             now_len = len(each_line) - len(each_line.lstrip())
             if is_start == False:
@@ -392,17 +397,22 @@ def text_unorderd_list(text):
                 
             pro_len = now_len
         else:
-            
             if is_start == True:
                 if list_n == 0:
                     new_line += "</li></ul>\n"
                 else:
                     for r in range(0, list_n):
                         new_line += "</li></ul>\n"
-                new_line += each_line + "\n"
+                        
+                new_line += each_line
+                if key < len(line) - 1:
+                    new_line += "\n"
+                
                 is_start = False
             else:
-                new_line += each_line + "\n"
+                new_line += each_line
+                if key < len(line) - 1:
+                    new_line += "\n"
     
     
     return new_line
@@ -412,7 +422,7 @@ def text_orderd_list(text):
     is_start = False    
     new_line = ""
     list_n = 0
-    for each_line in line:
+    for key, each_line in enumerate(line):
         if each_line.lstrip().startswith(('1.', 'A.', 'a.', 'I.', 'i.')):
             now_len = len(each_line) - len(each_line.lstrip())
 
@@ -461,10 +471,14 @@ def text_orderd_list(text):
                 else:
                     for r in range(0, list_n):
                         new_line += "</li></ol>\n"
-                new_line += each_line + "\n"
+                new_line += each_line
+                if key < len(line) - 1:
+                    new_line += "\n"
                 is_start = False
             else:
-                new_line += each_line + "\n"
+                new_line += each_line
+                if key < len(line) - 1:
+                    new_line += "\n"
     
     
     return new_line
@@ -624,8 +638,10 @@ def text_table(text):
         
         line[table_line_n[table_i][0]] += '<tbody>' + "\n" + tr + "</tbody>\n</table>\n</div>"
         
-    for each_line in line.values():
-        new_line += each_line + "\n"
+    for key, each_line in line.items():
+        new_line += each_line
+        if key < len(line) - 1:
+            new_line += "\n"
         
         
     return new_line
@@ -643,6 +659,7 @@ input = """
 <math>(a+b)^2=</math> {{{#blue <math>a^2+b^2</math>}}}{{{#red <math>+2ab</math>}}}
 """
 print('Input: ', input)
+print('Input line: ', len(input.splitlines()))
 
 text = ""
 nowiki = []
@@ -661,7 +678,8 @@ input = text_table(input)
 input = text_indent(input)
 
 # singleline
-for line in input.split("\n"):
+lines = input.split("\n")
+for key, line in enumerate(lines):
     line = text_nowiki(line)
     line = text_sizing(line)
     line = text_coloring(line)
@@ -684,13 +702,15 @@ for line in input.split("\n"):
     #후처리
     line = re.sub(r'{{{(.*)(</.*>)}}}', r"<code>\1</code>\2", line)
     
-    text += line + "\n"
+    text += line
+    if key < len(lines) - 1:
+        text += "\n"
 
 text += text_footnote()
 
 
 
 print("Output: ", text)
-
+print("Output line:", len(text.splitlines()))
 
 
