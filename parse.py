@@ -5,7 +5,31 @@ import time
 from datetime import datetime
 from collections import OrderedDict
 import pprint
+import textwrap
+import dominate
+from dominate.tags import *
+from dominate.util import raw
+from html5print import HTMLBeautifier
 
+
+def to_html(text):
+    doc = dominate.document(title='Untitled')
+
+    with doc.head:
+        script("""
+        MathJax.Hub.Config({
+          tex2jax: {inlineMath: [['[math]', '[/math]']]}
+        });
+        """, type='text/x-mathjax-config')
+        script(type="text/javascript", async='', src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML")
+        
+    with doc:
+        with div(cls="wiki-content clearfix"):
+            div(raw(text), cls="wiki-inner-content")
+        
+        
+
+    return HTMLBeautifier.beautify(doc.render())
 
 def text_foramting(text):
     bold = QuotedString("'''")
@@ -605,16 +629,18 @@ def text_table(text):
         
         
     return new_line
+    
+def text_math(text):
+    greet = QuotedString("<math>", endQuoteChar="</math>")
+    for i in greet.searchString(text):
+        for n in i:
+            text = text.replace('<math>' + n + '</math>', '[math]' + n + '[/math]')
+    return text
 
         
 
 input = """
-|캡션1| 테이블1 || 내용1 ||
-
-|캡션2| 테이블2 || 내용2 ||
-
-|캡션5| 테이블3 || 내용3 ||
-||크큭.. || 흑염룡이..!! ||
+{{{#blue 가나다라}}}{{{#red 마바사}}}
 """
 text = ""
 nowiki = []
@@ -647,9 +673,16 @@ for line in input.split("\n"):
     
     line = text_comment(line)
     line = text_hr(line)
+    line = text_math(line)
 
     line = text_nowiki_print(line)
     text += line + "\n"
 
 text += text_footnote()
+
+
+
 print(text)
+
+
+
