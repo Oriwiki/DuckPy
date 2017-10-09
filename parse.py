@@ -351,10 +351,10 @@ def text_unorderd_list(text):
         if each_line.lstrip().startswith('*'):
             now_len = len(each_line) - len(each_line.lstrip())
             if is_start == False:
-                new_line += "<ul>\n<li>" + each_line.lstrip()[1:] + "\n"
+                new_line += '<ul class="wiki-list">\n<li>' + each_line.lstrip()[1:] + "\n"
                 is_start = True
             elif now_len > pro_len:
-                new_line += "<ul>\n<li>" + each_line.lstrip()[1:] + "\n"
+                new_line += '<ul class="wiki-list">\n<li>' + each_line.lstrip()[1:] + "\n"
                 list_n += 1
             elif now_len < pro_len:
                 for r in range(0, list_n):
@@ -390,20 +390,43 @@ def text_orderd_list(text):
     for each_line in line:
         if each_line.lstrip().startswith(('1.', 'A.', 'a.', 'I.', 'i.')):
             now_len = len(each_line) - len(each_line.lstrip())
+
+            each_line = each_line.lstrip()
+        
+            if each_line.startswith('1.'):
+                ol_start = '<ol class="wiki-list wiki-list-decimal" '
+            elif each_line.startswith('A.'):
+                ol_start = '<ol class="wiki-list wiki-list-upper-alpha" '
+            elif each_line.startswith('a.'):
+                ol_start = '<ol class="wiki-list wiki-list-alpha" '
+            elif each_line.startswith('I.'):
+                ol_start = '<ol class="wiki-list wiki-list-upper-roman" '
+            elif each_line.startswith('I.'):
+                ol_start = '<ol class="wiki-list wiki-list-roman" '
+                
+            each_line = each_line[2:]
+            
+            start_n = re.findall(r"^#(\d+)", each_line)
+            if(len(start_n)) > 0:
+                ol_start += 'start="' + start_n[0] + '">'
+                each_line = re.sub(r"^#(\d+)", '', each_line)
+            else:
+                ol_start += 'start="1">'
+                
             if is_start == False:
-                new_line += "<ol>\n<li>" + each_line.lstrip()[2:] + "\n"
+                new_line += ol_start + "\n<li>" + each_line + "\n"
                 is_start = True
             elif now_len > pro_len:
-                new_line += "<ol>\n<li>" + each_line.lstrip()[2:] + "\n"
+                new_line += ol_start + "\n<li>" + each_line + "\n"
                 list_n += 1
             elif now_len < pro_len:
                 for r in range(0, list_n):
                     new_line += "</li></ol>"
                     
-                new_line += "<li>" + each_line.lstrip()[2:] + "\n"
+                new_line += "<li>" + each_line + "\n"
                 list_n -= 1
             else:
-                new_line += "</li>\n<li>" + each_line.lstrip()[2:] + "\n"
+                new_line += "</li>\n<li>" + each_line + "\n"
                 
             pro_len = now_len
         else:
@@ -429,8 +452,8 @@ input = """
    1. 리스트 4
  1. 리스트 5 
  
- 1. 리스트 7
- 1. 리스트 8
+ a.#20 리스트 7
+ a. 리스트 8
 """
 text = ""
 nowiki = []
