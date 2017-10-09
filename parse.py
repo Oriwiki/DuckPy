@@ -1,4 +1,4 @@
-from pyparsing import Word, srange, alphas, QuotedString, LineStart, restOfLine
+from pyparsing import QuotedString, LineStart, restOfLine
 from urllib.parse   import quote
 import re
 import time
@@ -483,6 +483,7 @@ def text_table(text):
             del(line[i])
             
         tr = ""
+        table_opt = {}
         for each_tr in table[table_i]:
             tr += '<tr>' + "\n"
             td_opt = {}
@@ -497,6 +498,10 @@ def text_table(text):
                 if rowspan:
                     td_opt['rowspan'] = rowspan.group(1)
                     td = td.replace(rowspan.group(0), '', 1)
+                
+                for table_opt_re in re.finditer(r"<table ([a-zA-Z]+)=([a-zA-Z#\d%]+)>", td):
+                    table_opt[table_opt_re.group(1)] = table_opt_re.group(2)
+                    td = td.replace(table_opt_re.group(0), '', 1)
                     
                 if td == "":
                     if td_opt['colspan'] == 0:
@@ -512,8 +517,23 @@ def text_table(text):
                         tr += ' ' + key + '=' + '"' + str(value) + '"'
                     tr += '><p>' + td + '</p></td>'  + "\n"
             tr += '</tr>' + "\n"
-                
-        line[table_line_n[table_i][0]] = '<div class="wiki-table-wrap">' + "\n" + '<table class="wiki-table" style="">' + "\n" + '<tbody>' + "\n" + tr + "</tbody>\n</table>\n</div>"
+        
+        div_class = 'wiki-table-wrap'
+        div_style = ''
+        table_style = ''
+        for key, value in table_opt.items():
+            if key == 'align':
+                div_class += ' table-' + value
+            elif key == 'bgcolor':
+                table_style += 'background-color: ' + value + ';'
+            elif key == 'bordercolor':
+                table_style += 'border: 2px solid ' + value + ';'
+            elif key == 'width':
+                div_style += 'width: ' + value + ';'
+                table_style += 'width: 100%;'
+        
+        
+        line[table_line_n[table_i][0]] = '<div class="' + div_class + '" style="' + div_style +'">' + "\n" + '<table class="wiki-table" style="' + table_style + '">' + "\n" + '<tbody>' + "\n" + tr + "</tbody>\n</table>\n</div>"
         
     for each_line in line.values():
         new_line += each_line + "\n"
@@ -524,9 +544,8 @@ def text_table(text):
         
 
 input = """
-|| 여백 || 여백 || 여백 || 여백 ||
-|| 여백 ||||||<|2> 3 곱하기 2 ||
-|| 여백 ||
+||<table align=center><table bgcolor=red><table bordercolor=#c0ffee><table width=100px> 테스트 || 테스트 ||
+|| 행1 || 행2 ||
 """
 text = ""
 nowiki = []
