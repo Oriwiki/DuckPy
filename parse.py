@@ -485,38 +485,84 @@ def text_table(text):
         tr = ""
         table_opt = {}
         for each_tr in table[table_i]:
-            tr += '<tr>' + "\n"
-            td_opt = {}
-            td_opt['colspan'] = 0
-            for td in each_tr:
-                colspan = re.match(r"<-(\d+)>", td)
+            tr_style = {}
+            td = ""
+            for each_td in each_tr:
+                td_opt = {}
+                td_style = {}
+                td_opt['colspan'] = 0
+
+                colspan = re.match(r"<-(\d+)>", each_td)
                 if colspan:
-                    td_opt['colspan'] += colspan.group(1)
-                    td = td.replace(colspan.group(0), '', 1)
+                    td_opt['colspan'] += int(colspan.group(1))
+                    each_td = each_td.replace(colspan.group(0), '', 1)
                     
-                rowspan = re.match(r"<\|(\d+)>", td)
+                rowspan = re.match(r"<([v^]?)\|(\d+)>", each_td)
                 if rowspan:
-                    td_opt['rowspan'] = rowspan.group(1)
-                    td = td.replace(rowspan.group(0), '', 1)
-                
-                for table_opt_re in re.finditer(r"<table ([a-zA-Z]+)=([a-zA-Z#\d%]+)>", td):
-                    table_opt[table_opt_re.group(1)] = table_opt_re.group(2)
-                    td = td.replace(table_opt_re.group(0), '', 1)
+                    td_opt['rowspan'] = rowspan.group(2)
+                    if rowspan.group(1) == "v":
+                        td_style['vertical-align'] = 'bottom'
+                    elif rowspan.group(1) == "^":
+                        td_style['vertical-align'] = 'top'
+                    each_td = each_td.replace(rowspan.group(0), '', 1)
                     
-                if td == "":
+                for align_re in re.finditer(r"<(\W)>", each_td):
+                    if align_re.group(1) == ':':
+                        td_style['text-align'] = 'center'
+                    elif align_re.group(1) == ')':
+                        td_style['text-align'] = 'right'
+                    each_td = each_td.replace(align_re.group(0), '', 1)
+                    
+                for tdtr_style_re in re.finditer(r"<([a-zA-Z]+)=([a-zA-Z#\d%]+)>", each_td):
+                    if tdtr_style_re.group(1) == 'rowbgcolor':
+                        tr_style['background-color'] = tdtr_style_re.group(2)
+                    elif tdtr_style_re.group(1) == 'bgcolor':
+                        td_style['background-color'] = tdtr_style_re.group(2)
+                    else:
+                        td_style[tdtr_style_re.group(1)] = tdtr_style_re.group(2)
+                        
+                    each_td = each_td.replace(tdtr_style_re.group(0), '', 1)
+                    
+                    
+                
+                for table_opt_re in re.finditer(r"<table ([a-zA-Z]+)=([a-zA-Z#\d%]+)>", each_td):
+                    table_opt[table_opt_re.group(1)] = table_opt_re.group(2)
+                    each_td = each_td.replace(table_opt_re.group(0), '', 1)
+                    
+                if len(each_td) > len(each_td.lstrip()) and len(each_td) > len(each_td.rstrip()):
+                    td_style['text-align'] = 'center'
+                elif len(each_td) > len(each_td.lstrip()) and len(each_td) == len(each_td.rstrip()):
+                    td_style['text-align'] = 'right'
+                    
+                    
+                if each_td == "":
                     if td_opt['colspan'] == 0:
                         td_opt['colspan'] += 2
                     else:
                         td_opt['colspan'] += 1
                 else:
                     
-                    tr += '<td'
+                    td += '<td'
                     for key, value in td_opt.items():
                         if key == 'colspan' and value == 0:
                             continue
-                        tr += ' ' + key + '=' + '"' + str(value) + '"'
-                    tr += '><p>' + td + '</p></td>'  + "\n"
-            tr += '</tr>' + "\n"
+                        td += ' ' + key + '=' + '"' + str(value) + '"'
+                    if len(td_style) > 0:
+                        td += ' style="'
+                        for key, value in td_style.items():
+                            td += key + ': ' + value + ';'
+                        td += '"'
+                    
+                    td += '><p>' + each_td.strip() + '</p></td>'  + "\n"
+                    
+            tr += '<tr'
+            if len(tr_style) > 0:
+                tr += ' style="'
+                for key, value in tr_style.items():
+                    tr += key + ': ' + value + ';'
+                tr += '"'
+            
+            tr += '>\n' + td + '</tr>' + "\n"
         
         div_class = 'wiki-table-wrap'
         div_style = ''
@@ -544,8 +590,7 @@ def text_table(text):
         
 
 input = """
-||<table align=center><table bgcolor=red><table bordercolor=#c0ffee><table width=100px> 테스트 || 테스트 ||
-|| 행1 || 행2 ||
+
 """
 text = ""
 nowiki = []
