@@ -485,20 +485,32 @@ def text_table(text):
         tr = ""
         for each_tr in table[table_i]:
             tr += '<tr>' + "\n"
-            td_colspan = 1
+            td_opt = {}
+            td_opt['colspan'] = 0
             for td in each_tr:
-                opt_td_colspan = re.match(r"<-(\d+)>", td)
+                colspan = re.match(r"<-(\d+)>", td)
+                if colspan:
+                    td_opt['colspan'] += colspan.group(1)
+                    td = td.replace(colspan.group(0), '', 1)
+                    
+                rowspan = re.match(r"<\|(\d+)>", td)
+                if rowspan:
+                    td_opt['rowspan'] = rowspan.group(1)
+                    td = td.replace(rowspan.group(0), '', 1)
+                    
                 if td == "":
-                    td_colspan += 1
-                else:
-                    if td_colspan > 1:
-                        tr += '<td colspan="'+ str(td_colspan) + '"><p>' + td + '</p></td>'  + "\n"
-                        td_colspan = 1
-                    elif opt_td_colspan:
-                        td = td.replace(opt_td_colspan.group(0), '', 1)
-                        tr += '<td colspan="'+ str(opt_td_colspan.group(1)) + '"><p>' + td + '</p></td>'  + "\n"
+                    if td_opt['colspan'] == 0:
+                        td_opt['colspan'] += 2
                     else:
-                        tr += '<td><p>' + td + '</p></td>'  + "\n"
+                        td_opt['colspan'] += 1
+                else:
+                    
+                    tr += '<td'
+                    for key, value in td_opt.items():
+                        if key == 'colspan' and value == 0:
+                            continue
+                        tr += ' ' + key + '=' + '"' + str(value) + '"'
+                    tr += '><p>' + td + '</p></td>'  + "\n"
             tr += '</tr>' + "\n"
                 
         line[table_line_n[table_i][0]] = '<div class="wiki-table-wrap">' + "\n" + '<table class="wiki-table" style="">' + "\n" + '<tbody>' + "\n" + tr + "</tbody>\n</table>\n</div>"
@@ -512,10 +524,9 @@ def text_table(text):
         
 
 input = """
-||<-12><:>1||
-||<-6><:>2||<-6><:>둘||
-||<-4><:>3||<-4><:>셋||<-4><:>three||
-||<-3><:>4||<-3><:>넷||<-3><:>four||<-3><:>四||
+|| 여백 || 여백 || 여백 || 여백 ||
+|| 여백 ||||||<|2> 3 곱하기 2 ||
+|| 여백 ||
 """
 text = ""
 nowiki = []
