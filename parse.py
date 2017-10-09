@@ -459,8 +459,21 @@ def text_table(text):
     table = []
     table_line_n = []
     tr_list = []
+    caption = []
+    each_caption = ""
     for each_line in line.values():
         if each_line.startswith('||'):
+            if is_start == False:
+                table_line_n.append([])
+            is_start = True
+            td_list = each_line.split('||')
+            del(td_list[0], td_list[len(td_list) - 1])
+            tr_list.append(td_list)
+            table_line_n[len(table_line_n) - 1].append(line_i)
+        elif each_line.startswith('|'):
+            each_caption = each_line.split('|')[1]
+            each_line = each_line.replace('|' + each_caption + '|', '||')
+            
             if is_start == False:
                 table_line_n.append([])
             is_start = True
@@ -471,11 +484,12 @@ def text_table(text):
         else:
             if is_start == True:
                 table.append(tr_list)
-                
-
+                caption.append(each_caption)
+                each_caption = ""
                 tr_list = []
                 is_start = False
         line_i += 1
+    
     
             
     for table_i in range(0, len(table)):
@@ -579,7 +593,12 @@ def text_table(text):
                 table_style += 'width: 100%;'
         
         
-        line[table_line_n[table_i][0]] = '<div class="' + div_class + '" style="' + div_style +'">' + "\n" + '<table class="wiki-table" style="' + table_style + '">' + "\n" + '<tbody>' + "\n" + tr + "</tbody>\n</table>\n</div>"
+        line[table_line_n[table_i][0]] = '<div class="' + div_class + '" style="' + div_style +'">' + "\n" + '<table class="wiki-table" style="' + table_style + '">' + "\n"
+        
+        if caption[table_i] != "":
+            line[table_line_n[table_i][0]] += '<caption>' + caption[table_i] + '</caption>\n'
+        
+        line[table_line_n[table_i][0]] += '<tbody>' + "\n" + tr + "</tbody>\n</table>\n</div>"
         
     for each_line in line.values():
         new_line += each_line + "\n"
@@ -590,7 +609,12 @@ def text_table(text):
         
 
 input = """
+|캡션1| 테이블1 || 내용1 ||
 
+|캡션2| 테이블2 || 내용2 ||
+
+|캡션5| 테이블3 || 내용3 ||
+||크큭.. || 흑염룡이..!! ||
 """
 text = ""
 nowiki = []
