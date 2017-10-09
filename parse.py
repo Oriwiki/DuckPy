@@ -369,8 +369,11 @@ def text_unorderd_list(text):
         else:
             
             if is_start == True:
-                for r in range(0, list_n + 1):
+                if list_n == 0:
                     new_line += "</li></ul>\n"
+                else:
+                    for r in range(0, list_n):
+                        new_line += "</li></ul>\n"
                 new_line += each_line + "\n"
                 is_start = False
             else:
@@ -405,8 +408,11 @@ def text_orderd_list(text):
             pro_len = now_len
         else:
             if is_start == True:
-                for r in range(0, list_n + 1):
+                if list_n == 0:
                     new_line += "</li></ol>\n"
+                else:
+                    for r in range(0, list_n):
+                        new_line += "</li></ol>\n"
                 new_line += each_line + "\n"
                 is_start = False
             else:
@@ -416,18 +422,15 @@ def text_orderd_list(text):
     return new_line
     
 
-input = """
+input = """ 
  1. 리스트1
   1. 리스트 2
   1. 리스트 3
    1. 리스트 4
- 1. 리스트 5
+ 1. 리스트 5 
  
- * 리스트1
-  * 리스트 2
-  * 리스트 3
-   * 리스트 4
- * 리스트 5 
+ 1. 리스트 7
+ 1. 리스트 8
 """
 text = ""
 nowiki = []
