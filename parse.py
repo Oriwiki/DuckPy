@@ -3,7 +3,8 @@ from urllib.parse   import quote
 import re
 import time
 from datetime import datetime
-import collections
+from collections import OrderedDict
+import pprint
 
 
 def text_foramting(text):
@@ -445,59 +446,82 @@ def text_orderd_list(text):
     return new_line
     
 def text_table(text):
-    line = text.split("\n")
+    line = OrderedDict()
+    for idx, val in enumerate(text.split("\n")):
+        line[idx] = val
+        
+    
     new_line = ""
     is_start = False
+    
 
     line_i = 0
+    table = []
     table_line_n = []
     tr_list = []
-    for each_line in line:
+    for each_line in line.values():
         if each_line.startswith('||'):
+            if is_start == False:
+                table_line_n.append([])
+            is_start = True
             td_list = each_line.split('||')
             del(td_list[0], td_list[len(td_list) - 1])
             tr_list.append(td_list)
-            table_line_n.append(line_i)
-        line_i += 1   
+            table_line_n[len(table_line_n) - 1].append(line_i)
+        else:
+            if is_start == True:
+                table.append(tr_list)
+                
 
-        
-    if len(table_line_n) > 0:
-        
-        for each_table_line_n in table_line_n[1:]:
-            del(line[each_table_line_n])
-        
-        print(tr_list)
+                tr_list = []
+                is_start = False
+        line_i += 1
+    
+            
+    for table_i in range(0, len(table)):
+        for i in table_line_n[table_i][1:]:
+            del(line[i])
+            
         tr = ""
-        for each_tr in tr_list:
+        for each_tr in table[table_i]:
             tr += '<tr>' + "\n"
+            td_colspan = 1
             for td in each_tr:
-                tr += '<td><p>' + td + '</p></td>'  + "\n"
+                opt_td_colspan = re.match(r"<-(\d+)>", td)
+                if td == "":
+                    td_colspan += 1
+                else:
+                    if td_colspan > 1:
+                        tr += '<td colspan="'+ str(td_colspan) + '"><p>' + td + '</p></td>'  + "\n"
+                        td_colspan = 1
+                    elif opt_td_colspan:
+                        td = td.replace(opt_td_colspan.group(0), '', 1)
+                        tr += '<td colspan="'+ str(opt_td_colspan.group(1)) + '"><p>' + td + '</p></td>'  + "\n"
+                    else:
+                        tr += '<td><p>' + td + '</p></td>'  + "\n"
             tr += '</tr>' + "\n"
+                
+        line[table_line_n[table_i][0]] = '<div class="wiki-table-wrap">' + "\n" + '<table class="wiki-table" style="">' + "\n" + '<tbody>' + "\n" + tr + "</tbody>\n</table>\n</div>"
         
-        table = '<div class="wiki-table-wrap">' + "\n" + '<table class="wiki-table" style="">' + "\n" + '<tbody>' + "\n" + tr + "</tbody>\n</table>\n</div>"
-        
-        line[table_line_n[0]] = table
-        
-        for each_line in line:
-            new_line += each_line + "\n"
+    for each_line in line.values():
+        new_line += each_line + "\n"
         
         
-        return new_line
+    return new_line
 
         
-    else:
-        return text
-        
 
-input = """ 
-|| 한 || 칸 || 짜 || 리 ||
-|||| 두칸 |||| 짜리 ||
-가나다
+input = """
+||<-12><:>1||
+||<-6><:>2||<-6><:>둘||
+||<-4><:>3||<-4><:>셋||<-4><:>three||
+||<-3><:>4||<-3><:>넷||<-3><:>four||<-3><:>四||
 """
 text = ""
 nowiki = []
-footnote = collections.OrderedDict()
+footnote = OrderedDict()
 footnote_i = 0
+pp = pprint.PrettyPrinter(indent=4)
 
 # muliline
 input = text_blockquote(input)
