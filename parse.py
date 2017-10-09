@@ -71,36 +71,36 @@ def text_foramting(text):
     return text
                 
 def text_sizing(text):
-    n_split = text[1:].split(" ", 1)
-    if 1 <= int(n_split[0]) <= 5:
-        return '<span class="wiki-size size-' + n_split[0] + '">' + n_split[1] + '</span>'
+    greet = QuotedString("{{{+", endQuoteChar="}}}")
     
+    for i in greet.searchString(text):
+        for n in i:
+            n_split = n.split(" ", 1)
+            if 1 <= int(n_split[0]) <= 5:
+                text = text.replace("{{{+" + n + "}}}", '<span class="wiki-size size-' + n_split[0] + '">' + n_split[1] + '</span>')
     return text
 
 def text_coloring(text):
-    n_split = text[1:].split(" ", 1)
-    if re.search(r'^(?:[0-9a-fA-F]{3}){1,2}$', n_split[0]):
-        return '<span class="wiki-color" style="color: #' + n_split[0] + '">' + n_split[1] + '</span>'
-    elif n_split[0].startswith("!") == False:
-        return '<span class="wiki-color" style="color: ' + n_split[0] + '">' + n_split[1] + '</span>'
+    greet = QuotedString("{{{#", endQuoteChar="}}}")
+    for i in greet.searchString(text):
+        for n in i:
+            n_split = n.split(" ", 1)
+            # hex 코드 구별
+            if re.search(r'^(?:[0-9a-fA-F]{3}){1,2}$', n_split[0]):
+                text = text.replace("{{{#" + n + "}}}", '<span class="wiki-color" style="color: #' + n_split[0] + '">' + n_split[1] + '</span>')
+            elif n_split[0].startswith("!") == False:
+                text = text.replace("{{{#" + n + "}}}", '<span class="wiki-color" style="color: ' + n_split[0] + '">' + n_split[1] + '</span>')
 
+    return text
+    
 def text_nowiki(text):
     greet = QuotedString("{{{", endQuoteChar="}}}", escQuote="}}}")
     for i in greet.searchString(text):
         for n in i:
-            if len(nowiki) > 0 and n == nowiki[len(nowiki) - 1]:
+            if n.startswith(('#', '+')):
                 return text
-            if n.startswith(('#', '+')) == False:
-                text = text.replace("{{{" + n + "}}}", "<nowiki" + str(len(nowiki)) + " />")
-                nowiki.append(n)
-            old_n = n
-            n = text_nowiki(n)
-            n_split = n.split(" ", 1)
-            # 텍스트 색상, 크기
-            if n.startswith('#'):
-                text = text.replace("{{{" + old_n + "}}}", text_coloring(n))
-            elif n.startswith('+'):
-                text = text.replace("{{{" + old_n + "}}}", text_sizing(n))
+            text = text.replace("{{{" + n + "}}}", "<nowiki" + str(len(nowiki)) + " />")
+            nowiki.append(n)
     return text
 
 def text_nowiki_print(text):
@@ -640,8 +640,10 @@ def text_math(text):
         
 
 input = """
-{{{#blue 가나다라}}}{{{#red 마바사}}}
+<math>(a+b)^2=</math> {{{#blue <math>a^2+b^2</math>}}}{{{#red <math>+2ab</math>}}}
 """
+print('Input: ', input)
+
 text = ""
 nowiki = []
 footnote = OrderedDict()
@@ -661,6 +663,8 @@ input = text_indent(input)
 # singleline
 for line in input.split("\n"):
     line = text_nowiki(line)
+    line = text_sizing(line)
+    line = text_coloring(line)
     line = text_link(line)
     line = text_foramting(line)
     line = text_anchor(line)
@@ -676,13 +680,17 @@ for line in input.split("\n"):
     line = text_math(line)
 
     line = text_nowiki_print(line)
+    
+    #후처리
+    line = re.sub(r'{{{(.*)(</.*>)}}}', r"<code>\1</code>\2", line)
+    
     text += line + "\n"
 
 text += text_footnote()
 
 
 
-print(text)
+print("Output: ", text)
 
 
 
