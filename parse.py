@@ -325,6 +325,9 @@ def text_indent(text):
     return new_line
     
 def text_footnote():
+    if len(footnote) == 0:
+        return ""
+
     s = '<div class="wiki-macro-footnote">' + "\n"
     
     i = 0
@@ -339,7 +342,7 @@ def text_footnote():
         del(footnote[key])
     return s + "</div>"
 
-def text_list(text):
+def text_unorderd_list(text):
     line = text.split("\n")
     is_start = False
     new_line = ""
@@ -364,9 +367,47 @@ def text_list(text):
                 
             pro_len = now_len
         else:
+            
             if is_start == True:
+                for r in range(0, list_n + 1):
+                    new_line += "</li></ul>\n"
+                new_line += each_line + "\n"
+                is_start = False
+            else:
+                new_line += each_line + "\n"
+    
+    
+    return new_line
+    
+def text_orderd_list(text):
+    line = text.split("\n")
+    is_start = False    
+    new_line = ""
+    list_n = 0
+    for each_line in line:
+        if each_line.lstrip().startswith(('1.', 'A.', 'a.', 'I.', 'i.')):
+            now_len = len(each_line) - len(each_line.lstrip())
+            if is_start == False:
+                new_line += "<ol>\n<li>" + each_line.lstrip()[2:] + "\n"
+                is_start = True
+            elif now_len > pro_len:
+                new_line += "<ol>\n<li>" + each_line.lstrip()[2:] + "\n"
+                list_n += 1
+            elif now_len < pro_len:
                 for r in range(0, list_n):
-                    new_line += "</li></ul>" + each_line + "\n"
+                    new_line += "</li></ol>"
+                    
+                new_line += "<li>" + each_line.lstrip()[2:] + "\n"
+                list_n -= 1
+            else:
+                new_line += "</li>\n<li>" + each_line.lstrip()[2:] + "\n"
+                
+            pro_len = now_len
+        else:
+            if is_start == True:
+                for r in range(0, list_n + 1):
+                    new_line += "</li></ol>\n"
+                new_line += each_line + "\n"
                 is_start = False
             else:
                 new_line += each_line + "\n"
@@ -376,25 +417,33 @@ def text_list(text):
     
 
 input = """
- * 후
-  * 해치웠나..?
-  * 손나
-  
-아 힘들어
+ 1. 리스트1
+  1. 리스트 2
+  1. 리스트 3
+   1. 리스트 4
+ 1. 리스트 5
+ 
+ * 리스트1
+  * 리스트 2
+  * 리스트 3
+   * 리스트 4
+ * 리스트 5 
 """
 text = ""
 nowiki = []
 footnote = collections.OrderedDict()
 footnote_i = 0
 
+# muliline
 input = text_blockquote(input)
 input = text_folding(input)
 input = text_div(input)
 input = text_syntax(input)
-input = text_list(input)
+input = text_unorderd_list(input)
+input = text_orderd_list(input)
 input = text_indent(input)
 
-
+# singleline
 for line in input.split("\n"):
     line = text_nowiki(line)
     line = text_link(line)
