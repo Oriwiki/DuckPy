@@ -695,7 +695,6 @@ class NamuMarkParser:
         for key, line in enumerate(lines):
             match = re.match(r'^(=+)([^=]+)(=+)$', line)
             if match:
-                print(match.group(1))
                 if match.group(1) == match.group(3):
                     x[len(match.group(1)) - 1] += 1
                     end_toc = (str(x[0]) + '.' + str(x[1]) + '.' + str(x[2]) + '.' + str(x[3]) + '.' + str(x[4]) + '.').replace('0.', '')
