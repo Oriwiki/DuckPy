@@ -4,11 +4,6 @@ import re
 import time
 from datetime import datetime
 from collections import OrderedDict
-import dominate
-from dominate.tags import *
-from dominate.util import raw
-from html5print import HTMLBeautifier
-from html.parser import HTMLParser
 
 class NamuMarkParser:
     def __init__(self):
@@ -61,28 +56,6 @@ class NamuMarkParser:
         self.text += self.text_footnote()
         
         return self.text
-
-
-
-
-    def parse_fullhtml(self, text):
-        doc = dominate.document(title='Untitled')
-
-        with doc.head:
-            script("""
-            MathJax.Hub.Config({
-              tex2jax: {inlineMath: [['[math]', '[/math]']]}
-            });
-            """, type='text/x-mathjax-config')
-            script(type="text/javascript", async='', src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML")
-            
-        with doc:
-            with div(cls="wiki-content clearfix"):
-                div(raw(text), cls="wiki-inner-content")
-            
-            
-
-        return HTMLBeautifier.beautify(doc.render())
 
     def text_foramting(self, text):
         bold = QuotedString("'''")
