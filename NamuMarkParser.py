@@ -689,34 +689,46 @@ class NamuMarkParser:
     def text_paragraph(self, text):
         lines = text.splitlines(True)
         new_line = ""
+        x = [0, 0, 0, 0, 0]
+        i = 0
         
         for key, line in enumerate(lines):
             match = re.match(r'^(=+)([^=]+)(=+)$', line)
             if match:
                 if match.group(1) == match.group(3):
+                    x[len(match.group(1)) - 1] += 1
+                    end_toc = (str(x[0]) + '.' + str(x[1]) + '.' + str(x[2]) + '.' + str(x[3]) + '.' + str(x[4]) + '.').replace('0.', '')
                     if len(self.toc) == 0:
-                        self.toc.append([len(match.group(1)), match.group(2).strip(), 1])
-                    elif len(match.group(1)) == self.toc[len(self.toc) - 1][0]:
-                        self.toc.append([len(match.group(1)), match.group(2).strip(), self.toc[len(self.toc) - 1][2]])
-                    elif len(match.group(1)) > self.toc[len(self.toc) - 1][0]:
-                        self.toc.append([len(match.group(1)), match.group(2).strip(), self.toc[len(self.toc) - 1][2] + 0.1])
-                    elif len(match.group(1)) < self.toc[len(self.toc) - 1][0]:
-                        self.toc.append([len(match.group(1)), match.group(2).strip(), int(self.toc[len(self.toc) - 1][2] + 1)])
-                    
-                    lines[key] = '<h' + str(len(match.group(1)) + 1) + ' class="wiki-heading">\n<a id="s-' + str(self.toc[len(self.toc) - 1][2]) + '" href="#toc">'+ str(self.toc[len(self.toc) - 1][2]) + '.</a>\n' + match.group(2).strip() + '\n</h' + str(len(match.group(1)) + 1) + '>\n'
-                    
+                        self.toc += [([len(match.group(1)), match.group(2).strip(), 1])]
+                    elif len(match.group(1)) == self.toc[i - 1][0]:
+                        self.toc += [([len(match.group(1)), match.group(2).strip(), re.sub('.$', '', end_toc)])]
+                    elif len(match.group(1)) > self.toc[i - 1][0]:
+                        self.toc += [([len(match.group(1)), match.group(2).strip(), re.sub('.$', '', end_toc)])]
+                    elif len(match.group(1)) < self.toc[i - 1][0]:
+                        j = 0
+                        while(1):
+                            j += 1
+                            try:
+                                x[len(match.group(1)) + j - 1] = 0
+                            except:
+                                break
                         
+                        end_toc = (str(x[0]) + '.' + str(x[1]) + '.' + str(x[2]) + '.' + str(x[3]) + '.' + str(x[4]) + '.').replace('0.', '')
+                        self.toc += [([len(match.group(1)), match.group(2).strip(), re.sub('.$', '', end_toc)])]
+                                            
+                    lines[key] = '<h' + str(len(match.group(1))) + ' class="wiki-heading">\n<a id="s-' + re.sub('.$', '', end_toc) + '" href="#toc">'+ end_toc + '</a>\n' + match.group(2).strip() + '\n</h' + str(len(match.group(1))) + '>\n'
+                    
+                    i += 1
                 
         for line in lines:
             new_line += line
-                
            
         return new_line
         
     def text_toc(self):
         text = '<div id="toc" class="wiki-macro-toc">\n<div class="toc-indent">\n'
         for each in self.toc:
-            text += '<span class="toc-item">\n<a href="#s-' + str(each[2]) + '">' + str(each[2]) + '</a>\n. ' + each[1] + '\n</span>\n'
+            text += '<span class="toc-item">\n<a href="#s-' + str(each[2]) + '">' + str(each[2]) + '</a>\n. ' + each[1] + '\n</span><br />\n'
         text += '</div>\n</div>'
         return text
         
@@ -724,11 +736,3 @@ class NamuMarkParser:
       cleanr = re.compile('<.*?>')
       cleantext = re.sub(cleanr, '', raw_html)
       return cleantext
-
-            
-
-
-
-
-
-
