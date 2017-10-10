@@ -1,4 +1,4 @@
-from pyparsing import QuotedString, LineStart, restOfLine
+from pyparsing import QuotedString, LineStart, restOfLine, LineEnd
 from urllib.parse   import quote
 import re
 import time
@@ -10,6 +10,7 @@ class NamuMarkParser:
         self.nowiki = []
         self.footnote = OrderedDict()
         self.footnote_i = 0
+        self.toc = []
         self.text = ""
 
     def parse(self, input, title):
@@ -22,6 +23,8 @@ class NamuMarkParser:
         input = self.text_orderd_list(input)
         input = self.text_table(input)
         input = self.text_indent(input)
+        input = self.text_paragraph(input)
+
 
         # singleline
         lines = input.split("\n")
@@ -677,6 +680,33 @@ class NamuMarkParser:
             for n in i:
                 text = text.replace('<math>' + n + '</math>', '[math]' + n + '[/math]')
         return text
+        
+    def text_paragraph(self, text):
+        lines = text.splitlines(True)
+        new_line = ""
+        
+        for key, line in enumerate(lines):
+            match = re.match(r'^(=+)([^=]+)(=+)$', line)
+            if match:
+                if match.group(1) == match.group(3):
+                    if len(self.toc) == 0:
+                        self.toc.append([len(match.group(1)), match.group(2).strip(), 1])
+                    elif len(match.group(1)) == self.toc[len(self.toc) - 1][0]:
+                        self.toc.append([len(match.group(1)), match.group(2).strip(), self.toc[len(self.toc) - 1][2]])
+                    elif len(match.group(1)) > self.toc[len(self.toc) - 1][0]:
+                        self.toc.append([len(match.group(1)), match.group(2).strip(), self.toc[len(self.toc) - 1][2] + 0.1])
+                    elif len(match.group(1)) < self.toc[len(self.toc) - 1][0]:
+                        self.toc.append([len(match.group(1)), match.group(2).strip(), int(self.toc[len(self.toc) - 1][2] + 1)])
+                    
+                    lines[key] = '<h' + str(len(match.group(1)) + 1) + ' class="wiki-heading">\n<a id="s-' + str(self.toc[len(self.toc) - 1][2]) + '" href="#toc">'+ str(self.toc[len(self.toc) - 1][2]) + '.</a>\n' + match.group(2).strip() + '\n</h' + str(len(match.group(1)) + 1) + '>\n'
+                    
+                        
+                
+        for line in lines:
+            new_line += line
+                
+           
+        return new_line
         
     def cleanhtml(self, raw_html):
       cleanr = re.compile('<.*?>')
