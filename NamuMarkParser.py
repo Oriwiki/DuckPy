@@ -202,9 +202,14 @@ class NamuMarkParser:
         text = text.replace('[br]', '<br />')
         
         if "[각주]" in text:
-            text = text.replace('[각주]', text_footnote())
+            text = text.replace('[각주]', self.text_footnote())
         if "[footnote]" in text:
-            text = text.replace('[footnote]', text_footnote())
+            text = text.replace('[footnote]', self.text_footnote())
+            
+        if "[목차]" in text:
+            text = text.replace('[목차]', self.text_toc())
+        if "[tableofcontents]" in text:
+            text = text.replace('[tableofcontents]', self.text_toc())
         
         greet  = QuotedString("[age(", endQuoteChar=")]")
         for i in greet.searchString(text):
@@ -707,6 +712,13 @@ class NamuMarkParser:
                 
            
         return new_line
+        
+    def text_toc(self):
+        text = '<div id="toc" class="wiki-macro-toc">\n<div class="toc-indent">\n'
+        for each in self.toc:
+            text += '<span class="toc-item">\n<a href="#s-' + str(each[2]) + '">' + str(each[2]) + '</a>\n. ' + each[1] + '\n</span>\n'
+        text += '</div>\n</div>'
+        return text
         
     def cleanhtml(self, raw_html):
       cleanr = re.compile('<.*?>')
