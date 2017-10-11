@@ -367,7 +367,7 @@ class NamuMarkParser:
         new_line = ""
         for key, each_line in enumerate(line):
             if each_line.startswith(' '):
-                each_line = text_indent(each_line[1:])
+                each_line = self.text_indent(each_line[1:])
                 if is_start == False:
                     new_line += '<div class="wiki-indent"><p>'+ "\n" + each_line + "\n"
                     is_start = True
