@@ -691,21 +691,166 @@ class NamuMarkParser:
         new_line = ""
         
         for key, line in enumerate(lines):
-            match = re.match(r'^(=+)([^=]+)(=+)$', line)
-            if match:
-                if match.group(1) == match.group(3):
-                    if len(self.toc) == 0:
-                        self.toc.append([len(match.group(1)), match.group(2).strip(), 1])
-                    elif len(match.group(1)) == self.toc[len(self.toc) - 1][0]:
-                        self.toc.append([len(match.group(1)), match.group(2).strip(), self.toc[len(self.toc) - 1][2]])
-                    elif len(match.group(1)) > self.toc[len(self.toc) - 1][0]:
-                        self.toc.append([len(match.group(1)), match.group(2).strip(), self.toc[len(self.toc) - 1][2] + 0.1])
-                    elif len(match.group(1)) < self.toc[len(self.toc) - 1][0]:
-                        self.toc.append([len(match.group(1)), match.group(2).strip(), int(self.toc[len(self.toc) - 1][2] + 1)])
-                    
-                    lines[key] = '<h' + str(len(match.group(1)) + 1) + ' class="wiki-heading">\n<a id="s-' + str(self.toc[len(self.toc) - 1][2]) + '" href="#toc">'+ str(self.toc[len(self.toc) - 1][2]) + '.</a>\n' + match.group(2).strip() + '\n</h' + str(len(match.group(1)) + 1) + '>\n'
-                    
+            line = line.replace('\n', '')
+            if line.startswith('======') and line.endswith('======'):
+                if len(self.toc) == 0:
+                    self.toc.append(['1', line[6:][:-6], 6])
+                    lines[key] = '<h6 class="wiki-heading">\n<a id="s-1" href="#toc">1.</a>' + line[6:][:-6] + '\n</h6>\n'
+                else:
+                    lastest = self.toc[len(self.toc) - 1]
+                    if lastest[2] < 6:
+                        self.toc.append([lastest[0] + '.1', line[6:][:-6], 6])
+                    elif lastest[2] > 6:
+                        lastest_split = lastest[0].split('.')
+                        toc_str = ""
+                        for each_n_idx in range(0, 6):
+                            if each_n_idx == 5:
+                                toc_str += str(int(lastest_split[each_n_idx]) + 1) + '.'
+                            else:
+                                toc_str += lastest_split[each_n_idx] + '.'
+                        self.toc.append([toc_str[:-1], line[6:][:-6], 6])
+                    elif lastest[2] == 6:
+                        lastest_split = lastest[0].split('.')
+                        toc_str = ""
+                        for each_n_idx, each_n in enumerate(lastest_split):
+                            if each_n_idx == len(lastest_split) - 1:
+                                toc_str += str(int(each_n) + 1)
+                            else:
+                                toc_str += each_n + '.'
+                        self.toc.append([toc_str, line[6:][:-6], 6])
+                    lines[key] = '<h6 class="wiki=heading">\n<a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[6:][:-6] + '\n</h6>\n'
+            elif line.startswith('=====') and line.endswith('====='):
+                if len(self.toc) == 0:
+                    self.toc.append(['1', line[5:][:-5], 5])
+                    lines[key] = '<h5 class="wiki-heading">\n<a id="s-1" href="#toc">1.</a>' + line[5:][:-5] + '\n</h5>\n'
+                else:
+                    lastest = self.toc[len(self.toc) - 1]
+                    if lastest[2] < 5:
+                        self.toc.append([lastest[0] + '.1', line[5:][:-5], 5])
+                    elif lastest[2] > 5:
+                        lastest_split = lastest[0].split('.')
+                        toc_str = ""
+                        for each_n_idx in range(0, 5):
+                            if each_n_idx == 4:
+                                toc_str += str(int(lastest_split[each_n_idx]) + 1) + '.'
+                            else:
+                                toc_str += lastest_split[each_n_idx] + '.'
+                        self.toc.append([toc_str[:-1], line[5:][:-5], 5])
+                    elif lastest[2] == 5:
+                        lastest_split = lastest[0].split('.')
+                        toc_str = ""
+                        for each_n_idx, each_n in enumerate(lastest_split):
+                            if each_n_idx == len(lastest_split) - 1:
+                                toc_str += str(int(each_n) + 1)
+                            else:
+                                toc_str += each_n + '.'
+                        self.toc.append([toc_str, line[5:][:-5], 5])
+                    lines[key] = '<h5 class="wiki=heading">\n<a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[5:][:-5] + '\n</h5>\n'
+            elif line.startswith('====') and line.endswith('===='):
+                if len(self.toc) == 0:
+                    self.toc.append(['1', line[4:][:-4], 4])
+                    lines[key] = '<h4 class="wiki-heading">\n<a id="s-1" href="#toc">1.</a>' + line[4:][:-4] + '\n</h4>\n'
+                else:
+                    lastest = self.toc[len(self.toc) - 1]
+                    if lastest[2] < 4:
+                        self.toc.append([lastest[0] + '.1', line[4:][:-4], 4])
+                    elif lastest[2] > 4:
+                        lastest_split = lastest[0].split('.')
+                        toc_str = ""
+                        for each_n_idx in range(0, 4):
+                            if each_n_idx == 3:
+                                toc_str += str(int(lastest_split[each_n_idx]) + 1) + '.'
+                            else:
+                                toc_str += lastest_split[each_n_idx] + '.'
+                        self.toc.append([toc_str[:-1], line[4:][:-4], 4])
+                    elif lastest[2] == 4:
+                        lastest_split = lastest[0].split('.')
+                        toc_str = ""
+                        for each_n_idx, each_n in enumerate(lastest_split):
+                            if each_n_idx == len(lastest_split) - 1:
+                                toc_str += str(int(each_n) + 1)
+                            else:
+                                toc_str += each_n + '.'
+                        self.toc.append([toc_str, line[4:][:-4], 4])
+                    lines[key] = '<h4 class="wiki=heading">\n<a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[4:][:-4] + '\n</h4>\n'
+            elif line.startswith('===') and line.endswith('==='):
+                if len(self.toc) == 0:
+                    self.toc.append(['1', line[3:][:-3], 3])
+                    lines[key] = '<h3 class="wiki-heading">\n<a id="s-1" href="#toc">1.</a>' + line[3:][:-3] + '\n</h3>\n'
+                else:
+                    lastest = self.toc[len(self.toc) - 1]
+                    if lastest[2] < 3:
+                        self.toc.append([lastest[0] + '.1', line[3:][:-3], 3])
+                    elif lastest[2] > 3:
+                        lastest_split = lastest[0].split('.')
+                        toc_str = ""
+                        for each_n_idx in range(0, 3):
+                            if each_n_idx == 2:
+                                toc_str += str(int(lastest_split[each_n_idx]) + 1) + '.'
+                            else:
+                                toc_str += lastest_split[each_n_idx] + '.'
+                        self.toc.append([toc_str[:-1], line[3:][:-3], 3])
+                    elif lastest[2] == 3:
+                        lastest_split = lastest[0].split('.')
+                        toc_str = ""
+                        for each_n_idx, each_n in enumerate(lastest_split):
+                            if each_n_idx == len(lastest_split) - 1:
+                                toc_str += str(int(each_n) + 1)
+                            else:
+                                toc_str += each_n + '.'
+                        self.toc.append([toc_str, line[3:][:-3], 3])
+                    lines[key] = '<h3 class="wiki=heading">\n<a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[3:][:-3] + '\n</h3>\n'
+            elif line.startswith('==') and line.endswith('=='):
+                if len(self.toc) == 0:
+                    self.toc.append(['1', line[2:][:-2], 2])
+                    lines[key] = '<h2 class="wiki-heading">\n<a id="s-1" href="#toc">1.</a>' + line[2:][:-2] + '\n</h2>\n'
+                else:
+                    lastest = self.toc[len(self.toc) - 1]
+                    if lastest[2] < 2:
+                        self.toc.append([lastest[0] + '.1', line[2:][:-2], 2])
+                    elif lastest[2] > 2:
+                        lastest_split = lastest[0].split('.')
+                        toc_str = ""
                         
+                        for each_n_idx in range(0, 2):
+                            if each_n_idx == 1:
+                                toc_str += str(int(lastest_split[each_n_idx]) + 1) + '.'
+                            else:
+                                toc_str += lastest_split[each_n_idx] + '.'
+                        
+                        self.toc.append([toc_str[:-1], line[2:][:-2], 2])
+                    elif lastest[2] == 2:
+                        lastest_split = lastest[0].split('.')
+                        toc_str = ""
+                        for each_n_idx, each_n in enumerate(lastest_split):
+                            if each_n_idx == len(lastest_split) - 1:
+                                toc_str += str(int(each_n) + 1)
+                            else:
+                                toc_str += each_n + '.'
+                        self.toc.append([toc_str, line[2:][:-2], 2])
+                    lines[key] = '<h2 class="wiki=heading">\n<a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[2:][:-2] + '\n</h2>\n'
+            elif line.startswith('=') and line.endswith('='):
+                if len(self.toc) == 0:
+                    self.toc.append(['1', line[1:][:-1], 1])
+                    lines[key] = '<h1 class="wiki-heading">\n<a id="s-1" href="#toc">1.</a>' + line[1:][:-1] + '\n</h1>\n'
+                else:
+                    lastest = self.toc[len(self.toc) - 1]
+                    if lastest[2] > 1:
+                        lastest_split = lastest[0].split('.')
+                        toc_str = ""
+                        toc_str += str(int(lastest_split[0]) + 1) + '.'
+                                
+                        self.toc.append([toc_str[:-1], line[1:][:-1], 1])
+                    elif lastest[2] == 1:
+                        lastest_split = lastest[0].split('.')
+                        toc_str = ""
+                        for each_n_idx, each_n in enumerate(lastest_split):
+                            if each_n_idx == len(lastest_split) - 1:
+                                toc_str += str(int(each_n) + 1)
+                            else:
+                                toc_str += each_n + '.'
+                        self.toc.append([toc_str, line[1:][:-1], 1])
+                    lines[key] = '<h1 class="wiki=heading">\n<a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[1:][:-1] + '\n</h1>\n'
                 
         for line in lines:
             new_line += line
@@ -715,8 +860,29 @@ class NamuMarkParser:
         
     def text_toc(self):
         text = '<div id="toc" class="wiki-macro-toc">\n<div class="toc-indent">\n'
-        for each in self.toc:
-            text += '<span class="toc-item">\n<a href="#s-' + str(each[2]) + '">' + str(each[2]) + '</a>\n. ' + each[1] + '\n</span>\n'
+        last_count = 0
+        div_count = 0
+        for idx, each in enumerate(self.toc):
+            if idx == 0:
+                text += '<span class="toc-item">\n<a href="#s-' + each[0] + '">' + each[0] + '</a>\n. ' + each[1] + '\n</span>\n'
+            else:
+                now_count = each[0].count('.')
+                if last_count == now_count:
+                    text += '<span class="toc-item">\n<a href="#s-' + each[0] + '">' + each[0] + '</a>\n. ' + each[1] + '\n</span>\n'
+                elif last_count < now_count:
+                    text += '<div class="toc-indent">\n<span class="toc-item">\n<a href="#s-' + each[0] + '">' + each[0] + '</a>\n. ' + each[1] + '\n</span>\n'
+                    div_count += 1
+                    last_count = now_count
+                elif last_count > now_count:
+                    for j in range(0, last_count - now_count):
+                        text += '</div>\n'
+                    div_count -= last_count - now_count
+                    text += '<span class="toc-item">\n<a href="#s-' + each[0] + '">' + each[0] + '</a>\n. ' + each[1] + '\n</span>\n'
+                    last_count = now_count
+                
+        
+        for j in range(0, div_count):
+            text += '</div>\n'
         text += '</div>\n</div>'
         return text
         
