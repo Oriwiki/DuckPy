@@ -13,6 +13,20 @@
 향후 더 추가될 수 있습니다.
 
 ## 사용법
+LocalSettings.py를 생성 후 다음과 같이 DB 정보를 입력합니다. DB 종류는 django에서 지원하는 것이라면 어떤 것이든 상관없습니다.
+```
+db = {
+    'default': {
+        'ENGINE': 'django.db.backends.mysql',
+        'NAME': 'django_locker', # DB명
+        'USER': '', # 데이터베이스 계정
+        'PASSWORD': '', # 계정 비밀번호
+        'HOST': '', # 데이테베이스 주소(IP)
+        'PORT': '', # 데이터베이스 포트(보통은 3306)
+    }
+}
+```
+
 아직 Form도 생성하지 않았기 때문에 mywiki/views.py의 input 변수를 수정 후,
 ```
 python manage.py runserver
