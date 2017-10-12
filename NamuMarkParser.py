@@ -299,29 +299,49 @@ class NamuMarkParser:
         return text
         
     def text_reference(self, text):
-        greet = QuotedString("[*", endQuoteChar="]", escQuote="]")
-        for i in greet.searchString(text):
-            if len(i) == 0:
-                return False
-            for n in i:
-                old_n = n
-                n = self.text_reference(n)
-                self.footnote_i += 1
-
-                n_split = n.split(" ", 1)
-                if n_split[0] == "":
-                    self.footnote[self.footnote_i] = n_split[1]
-                    text = text.replace('[*' + old_n + ']', '<a class="wiki-fn-content" title="' + self.cleanhtml(n_split[1]) + '" href="#fn-' + str(self.footnote_i) + '"><span id="rfn-' + str(self.footnote_i) + '" class="target"></span>[' + str(self.footnote_i) + ']</a>')
-                elif len(n_split) == 1:
-                    self.footnote[self.footnote_i] = ""
-                    
-                    text = text.replace('[*' + old_n + ']', '<a class="wiki-fn-content" title="' + self.cleanhtml(self.footnote[n_split[0]]) + '" href="#fn-' + n_split[0] + '"><span id="rfn-' + str(self.footnote_i) + '" class="target"></span>[' + n_split[0] + ']</a>')
-                else:
-                    self.footnote[n_split[0]] = n_split[1]
-                    
-                    text = text.replace('[*' + old_n + ']', '<a class="wiki-fn-content" title="' + self.cleanhtml(n_split[1]) + '" href="#fn-' + n_split[0] + '"><span id="rfn-' + str(self.footnote_i) + '" class="target"></span>[' + n_split[0] + ']</a>')
+        sliced_text = list(text)
+        open = 0
+        content = []
+        idx_list = []
         
+        for idx, each_char in enumerate(sliced_text):
+            if each_char == '[' and sliced_text[idx + 1] == '*':
+                open += 1
+            elif each_char == ']':
+                if (open == 1 and len(content) == 1) or (len(content) > open):
+                    content.append('')
+                    
+                self.footnote_i += 1
+                content_split = content[len(content) - 2].split(" ", 1)
+                if content_split[0] == "":
+                    self.footnote[self.footnote_i] = content_split[1]
+                elif len(content_split) == 1:
+                    self.footnote[self.footnote_i] = ""
+                else:
+                    self.footnote[content_split[0]] = content_split[1]
+                
+                open -= 1
+            elif open > 0 and each_char == '*':
+                pass
+            elif open > 0 and each_char != '*':
+                if len(content) < open:
+                    if len(content) != 0:
+                        content[len(content) - 1] += '[' + str(self.footnote_i + (open - len(content)) + 1) + ']'
+                    content.append(each_char)
+                elif len(content) == open:
+                    for i in range(0, len(content)):
+                        content[i] += each_char
+                elif len(content) > open:
+                    content[len(content) - 1] += each_char
+                
+                
+            
+        
+            
         return text
+    
+    
+    
         
     def text_blockquote(self, text):
         line = text.split("\n")
