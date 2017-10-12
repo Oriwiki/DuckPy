@@ -299,16 +299,38 @@ class NamuMarkParser:
         return text
         
     def text_reference(self, text):
+        if not '[*' in text:
+            return text
+        
         sliced_text = list(text)
         open = 0
         content = []
+        text = ""
         
         for idx, each_char in enumerate(sliced_text):
             if each_char == '[' and sliced_text[idx + 1] == '*':
+                content.append('')
                 open += 1
             elif each_char == ']':
-                if (open == 1 and len(content) == 1) or (len(content) > open):
-                    content.append('')
+                    
+                for each_content in content:
+                    self.footnote_i += 1
+                    each_content_split = each_content.split(" ", 1)
+                    if each_content_split[0] == "":
+                        self.footnote[self.footnote_i] = each_content_split[1]
+                        text += '<a class="wiki-fn-content" title="' + self.cleanhtml(each_content_split[1]) + '" href="#fn-' + str(self.footnote_i) + '"><span id="rfn-' + str(self.footnote_i) + '" class="target"></span>[' + str(self.footnote_i) + ']</a>'
+                        
+                        
+                    elif len(each_content_split) == 1:
+                        self.footnote[self.footnote_i] = ""
+                        text += '<a class="wiki-fn-content" title="' + self.cleanhtml(self.footnote[each_content_split[0]]) + '" href="#fn-' + each_content_split[0] + '"><span id="rfn-' + str(self.footnote_i) + '" class="target"></span>[' + each_content_split[0] + ']</a>'
+                        
+                    else:
+                        self.footnote[each_content_split[0]] = each_content_split[1]
+                        text += '<a class="wiki-fn-content" title="' + self.cleanhtml(each_content_split[1]) + '" href="#fn-' + each_content_split[0] + '"><span id="rfn-' + str(self.footnote_i) + '" class="target"></span>[' + each_content_split[0] + ']</a>'
+                        
+                content = []
+                    
                 open -= 1
             elif open > 0 and each_char == '*':
                 pass
@@ -320,25 +342,9 @@ class NamuMarkParser:
                         content[i] += each_char
                 elif len(content) > open:
                     content[len(content) - 1] += each_char
-                
-        
-        for each_content in content:
-            self.footnote_i += 1
-            each_content_split = each_content.split(" ", 1)
-            if each_content_split == ['']:
-                self.footnote_i -= 1
-                continue
-            if each_content_split[0] == "":
-                self.footnote[self.footnote_i] = each_content_split[1]
-            elif len(each_content_split) == 1:
-                self.footnote[self.footnote_i] = ""
             else:
-                self.footnote[each_content_split[0]] = each_content_split[1]
+                text += each_char
                 
-                
-        #print(self.footnote)
-        
-            
         return text
     
     
