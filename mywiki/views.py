@@ -6,7 +6,8 @@ from bs4 import BeautifulSoup
 # Create your views here.
 def index(request):
     input = """
-<math>1 + 1 = 2</math>
+||<table align=right><-3><#000><:> [[유네스코|{{{#fff '''유네스코'''}}}]] [[세계유산|{{{#fff '''세계유산'''}}}]] ||
+
 """
 
     title = ""

@@ -576,13 +576,13 @@ class NamuMarkParser:
                     td_opt = {}
                     td_style = {}
                     td_opt['colspan'] = 0
-
-                    colspan = re.match(r"<-(\d+)>", each_td)
+                    
+                    colspan = re.search(r"<-(\d+)>", each_td)
                     if colspan:
                         td_opt['colspan'] += int(colspan.group(1))
                         each_td = each_td.replace(colspan.group(0), '', 1)
                         
-                    rowspan = re.match(r"<([v^]?)\|(\d+)>", each_td)
+                    rowspan = re.search(r"<([v^]?)\|(\d+)>", each_td)
                     if rowspan:
                         td_opt['rowspan'] = rowspan.group(2)
                         if rowspan.group(1) == "v":
@@ -590,7 +590,7 @@ class NamuMarkParser:
                         elif rowspan.group(1) == "^":
                             td_style['vertical-align'] = 'top'
                         each_td = each_td.replace(rowspan.group(0), '', 1)
-                        
+                    
                     for align_re in re.finditer(r"<(\W)>", each_td):
                         if align_re.group(1) == ':':
                             td_style['text-align'] = 'center'
@@ -608,7 +608,6 @@ class NamuMarkParser:
                             
                         each_td = each_td.replace(tdtr_style_re.group(0), '', 1)
                         
-                        
                     
                     for table_opt_re in re.finditer(r"<table ([a-zA-Z]+)=([a-zA-Z#\d%]+)>", each_td):
                         table_opt[table_opt_re.group(1)] = table_opt_re.group(2)
@@ -618,7 +617,6 @@ class NamuMarkParser:
                         td_style['text-align'] = 'center'
                     elif len(each_td) > len(each_td.lstrip()) and len(each_td) == len(each_td.rstrip()):
                         td_style['text-align'] = 'right'
-                        
                         
                     if each_td == "":
                         if td_opt['colspan'] == 0:
