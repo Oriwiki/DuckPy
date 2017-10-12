@@ -302,7 +302,6 @@ class NamuMarkParser:
         sliced_text = list(text)
         open = 0
         content = []
-        idx_list = []
         
         for idx, each_char in enumerate(sliced_text):
             if each_char == '[' and sliced_text[idx + 1] == '*':
@@ -310,23 +309,11 @@ class NamuMarkParser:
             elif each_char == ']':
                 if (open == 1 and len(content) == 1) or (len(content) > open):
                     content.append('')
-                    
-                self.footnote_i += 1
-                content_split = content[len(content) - 2].split(" ", 1)
-                if content_split[0] == "":
-                    self.footnote[self.footnote_i] = content_split[1]
-                elif len(content_split) == 1:
-                    self.footnote[self.footnote_i] = ""
-                else:
-                    self.footnote[content_split[0]] = content_split[1]
-                
                 open -= 1
             elif open > 0 and each_char == '*':
                 pass
             elif open > 0 and each_char != '*':
                 if len(content) < open:
-                    if len(content) != 0:
-                        content[len(content) - 1] += '[' + str(self.footnote_i + (open - len(content)) + 1) + ']'
                     content.append(each_char)
                 elif len(content) == open:
                     for i in range(0, len(content)):
@@ -334,8 +321,22 @@ class NamuMarkParser:
                 elif len(content) > open:
                     content[len(content) - 1] += each_char
                 
+        
+        for each_content in content:
+            self.footnote_i += 1
+            each_content_split = each_content.split(" ", 1)
+            if each_content_split == ['']:
+                self.footnote_i -= 1
+                continue
+            if each_content_split[0] == "":
+                self.footnote[self.footnote_i] = each_content_split[1]
+            elif len(each_content_split) == 1:
+                self.footnote[self.footnote_i] = ""
+            else:
+                self.footnote[each_content_split[0]] = each_content_split[1]
                 
-            
+                
+        #print(self.footnote)
         
             
         return text
