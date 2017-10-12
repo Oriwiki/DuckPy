@@ -590,6 +590,11 @@ class NamuMarkParser:
                         elif rowspan.group(1) == "^":
                             td_style['vertical-align'] = 'top'
                         each_td = each_td.replace(rowspan.group(0), '', 1)
+                        
+                    bgcolor = re.search(r"<(#(?:[0-9a-fA-F]{3}){1,2})>", each_td)
+                    if bgcolor:
+                        td_style['background-color'] = bgcolor.group(1)
+                        each_td = each_td.replace(bgcolor.group(0), '', 1)
                     
                     for align_re in re.finditer(r"<(\W)>", each_td):
                         if align_re.group(1) == ':':
