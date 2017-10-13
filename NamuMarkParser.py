@@ -23,12 +23,18 @@ class NamuMarkParser:
 
         if len(self.toc) > 0:
             if self.toc_before != "":
+                text += '<p>\n'
                 text += self.__parse_defs_multiline(self.toc_before)
+                text += '\n</p>\n'
             for idx, each_toc in enumerate(self.toc):
                 text += '<h' + str(each_toc[2]) + ' class="wiki-heading"><a id="s-' + each_toc[0] + '" href="#toc">' + each_toc[0] + '.</a>' + each_toc[1] + '<span class="wiki-edit-section"><a href="/edit/' + quote(self.title) + '?section=' + str(idx + 1) + '" rel="nofollow">[편집]</a></span></h' + str(each_toc[2]) + '>\n'
+                text += '<p>\n'
                 text += self.__parse_defs_multiline(each_toc[3])
+                text += '\n</p>\n'
         else:
+            text += '<p>\n'
             text += self.__parse_defs_multiline(input)
+            text += '\n</p>\n'
         text += self.__text_footnote()
         
         end_time = time.time()
