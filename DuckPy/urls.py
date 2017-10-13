@@ -19,5 +19,7 @@ from mywiki import views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^$', views.index),
+    url(r'^$', views.view, {'title': None}),
+    url(r'^edit/(?P<title>.*)/$', views.edit),
+    url(r'^w/(?P<title>.*)/$', views.view),
 ]
