@@ -19,63 +19,41 @@ class NamuMarkParser:
         start_time = time.time()
         text = ""
         input = self.input
-        self.text_paragraph(input)
+        self.__text_paragraph(input)
 
         if len(self.toc) > 0:
             if self.toc_before != "":
-                text += self.parse_defs(self.toc_before)
+                text += self.__parse_defs_multiline(self.toc_before)
             for idx, each_toc in enumerate(self.toc):
                 text += '<h' + str(each_toc[2]) + ' class="wiki-heading"><a id="s-' + each_toc[0] + '" href="#toc">' + each_toc[0] + '.</a>' + each_toc[1] + '<span class="wiki-edit-section"><a href="/edit/' + quote(self.title) + '?section=' + str(idx + 1) + '" rel="nofollow">[편집]</a></span></h' + str(each_toc[2]) + '>\n'
-                text += self.parse_defs(each_toc[3])
+                text += self.__parse_defs_multiline(each_toc[3])
         else:
-            text += self.parse_defs(input)
-        text += self.text_footnote()
+            text += self.__parse_defs_multiline(input)
+        text += self.__text_footnote()
         
         end_time = time.time()
         print('parse 처리 시간: ', end_time - start_time)
         
         return text
         
-    def parse_defs(self, input):
+    def __parse_defs_multiline(self, input):
         text = ""
     
         # muliline
-        input = self.text_blockquote(input)
-        input = self.text_folding(input)
-        input = self.text_div(input)
-        input = self.text_syntax(input)
-        input = self.text_unorderd_list(input)
-        input = self.text_orderd_list(input)
-        input = self.text_table(input)
-        input = self.text_indent(input)
+        input = self.__text_blockquote(input)
+        input = self.__text_folding(input)
+        input = self.__text_div(input)
+        input = self.__text_syntax(input)
+        input = self.__text_unorderd_list(input)
+        input = self.__text_orderd_list(input)
+        input = self.__text_table(input)
+        input = self.__text_indent(input)
 
 
         # singleline
         lines = input.split("\n")
         for key, line in enumerate(lines):
-            line = self.text_nowiki(line)
-            line = self.text_sizing(line)
-            line = self.text_coloring(line)
-            line = self.text_link(line)
-            line = self.text_foramting(line)
-            line = self.text_anchor(line)
-            line = self.text_youtube(line)
-            line = self.text_reference(line)
-
-            line = self.text_macro(line)
-            line = self.text_html(line)
-            
-            line = self.text_closure(line)
-            
-            line = self.text_comment(line)
-            line = self.text_hr(line)
-            line = self.text_math(line)
-
-            line = self.text_nowiki_print(line)
-            
-            #후처리
-            line = re.sub(r'{{{(.*)(</.*>)}}}', r"<code>\1</code>\2", line)
-            
+            line = self.__parse_defs_singleline(line)
             text += line
             if key == 0 and line == "":
                 pass
@@ -83,9 +61,37 @@ class NamuMarkParser:
                 text += "<br />\n"
                 
         return text
+        
+    def __parse_defs_singleline(self, text):
+        line = text
+    
+        line = self.__text_nowiki(line)
+        line = self.__text_sizing(line)
+        line = self.__text_coloring(line)
+        line = self.__text_link(line)
+        line = self.__text_foramting(line)
+        line = self.__text_anchor(line)
+        line = self.__text_youtube(line)
+        line = self.__text_reference(line)
+
+        line = self.__text_macro(line)
+        line = self.__text_html(line)
+        
+        line = self.__text_closure(line)
+        
+        line = self.__text_comment(line)
+        line = self.__text_hr(line)
+        line = self.__text_math(line)
+
+        line = self.__text_nowiki_print(line)
+        
+        #후처리
+        line = re.sub(r'{{{(.*)(</.*>)}}}', r"<code>\1</code>\2", line)
+        
+        return line
 
 
-    def text_foramting(self, text):
+    def __text_foramting(self, text):
         if not "''" in text and not "~~" in text and not "--" in text and not "__" in text and not "^^" in text and not ",," in text:
             return text
     
@@ -127,7 +133,7 @@ class NamuMarkParser:
         
         return text
                     
-    def text_sizing(self, text):
+    def __text_sizing(self, text):
         if not "{{{+" in text:
             return text
     
@@ -140,7 +146,7 @@ class NamuMarkParser:
                     text = text.replace("{{{+" + n + "}}}", '<span class="wiki-size size-' + n_split[0] + '">' + n_split[1] + '</span>')
         return text
 
-    def text_coloring(self, text):
+    def __text_coloring(self, text):
         if not "{{{#" in text:
             return text
     
@@ -156,7 +162,7 @@ class NamuMarkParser:
 
         return text
         
-    def text_nowiki(self, text):
+    def __text_nowiki(self, text):
         if not "{{{" in text:
             return text
     
@@ -169,7 +175,7 @@ class NamuMarkParser:
                 self.nowiki.append(n)
         return text
 
-    def text_nowiki_print(self, text):
+    def __text_nowiki_print(self, text):
         if len(self.nowiki) == 0:
             return text
     
@@ -179,7 +185,7 @@ class NamuMarkParser:
             i += 1
         return text
         
-    def text_link(self, text):
+    def __text_link(self, text):
         if not "[[" in text:
             return text
     
@@ -210,7 +216,7 @@ class NamuMarkParser:
                         text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal" href="/w/' + quote(n_split[0], '#') + '" title="' + n_split[0] + '">' + n_split[1] + '</a>')
         return text
         
-    def text_anchor(self, text):
+    def __text_anchor(self, text):
         if not "[anchor(" in text:
             return text
     
@@ -220,7 +226,7 @@ class NamuMarkParser:
                 text = text.replace("[anchor(" + n + ")]", '<a id="' + n + '"></a>')
         return text
         
-    def text_youtube(self, text):
+    def __text_youtube(self, text):
         if not "[youtube(" in text:
             return text
             
@@ -242,7 +248,7 @@ class NamuMarkParser:
                     text = text.replace("[youtube(" + n + ")]", '<iframe class="wiki-youtube" allowfullscreen="" src="//www.youtube.com/embed/' + n_split[0] + '" width="' + width + '" height="' + height + '" frameborder="0"></iframe>')
         return text
         
-    def text_macro(self, text):
+    def __text_macro(self, text):
         if not "[" in text and not "[age(" in text and not "[dday(" in text:
             return text
             
@@ -255,14 +261,14 @@ class NamuMarkParser:
         text = text.replace('[br]', '<br />')
         
         if "[각주]" in text:
-            text = text.replace('[각주]', self.text_footnote())
+            text = text.replace('[각주]', self.__text_footnote())
         if "[footnote]" in text:
-            text = text.replace('[footnote]', self.text_footnote())
+            text = text.replace('[footnote]', self.__text_footnote())
             
         if "[목차]" in text:
-            text = text.replace('[목차]', self.text_toc())
+            text = text.replace('[목차]', self.__text_toc())
         if "[tableofcontents]" in text:
-            text = text.replace('[tableofcontents]', self.text_toc())
+            text = text.replace('[tableofcontents]', self.__text_toc())
             
         
         greet  = QuotedString("[age(", endQuoteChar=")]")
@@ -279,7 +285,7 @@ class NamuMarkParser:
                 
         return text
         
-    def text_folding(self, text):
+    def __text_folding(self, text):
         if not "{{{#!folding " in text:
             return text
     
@@ -302,7 +308,7 @@ class NamuMarkParser:
                 text = text.replace("{{{#!folding" + n + "}}}", s)
         return text
         
-    def text_html(self, text):
+    def __text_html(self, text):
         if not "{{{#!html " in text:
             return text
     
@@ -312,7 +318,7 @@ class NamuMarkParser:
                 text = text.replace('{{{#!html' + n + "}}}", n)
         return text
         
-    def text_div(self, text):
+    def __text_div(self, text):
         if not "{{{#!wiki " in text:
             return text
     
@@ -333,7 +339,7 @@ class NamuMarkParser:
                 
         return text
 
-    def text_syntax(self, text):
+    def __text_syntax(self, text):
         if not "{{{#!syntax " in text:
             return text
     
@@ -357,7 +363,7 @@ class NamuMarkParser:
                 
         return text
         
-    def text_closure(self, text):
+    def __text_closure(self, text):
         if not "{{|" in text:
             return text
     
@@ -367,7 +373,7 @@ class NamuMarkParser:
                 text = text.replace('{{|' + n + '|}}', '<table class="wiki-closure"><tbody><tr><td><p>' + n + '</p></td></tr></tbody></table>')
         return text
         
-    def text_reference(self, text):
+    def __text_reference(self, text):
         if not '[*' in text:
             return text
         
@@ -387,16 +393,16 @@ class NamuMarkParser:
                     each_content_split = each_content.split(" ", 1)
                     if each_content_split[0] == "":
                         self.footnote[self.footnote_i] = each_content_split[1]
-                        text += '<a class="wiki-fn-content" title="' + self.cleanhtml(each_content_split[1]) + '" href="#fn-' + str(self.footnote_i) + '"><span id="rfn-' + str(self.footnote_i) + '" class="target"></span>[' + str(self.footnote_i) + ']</a>'
+                        text += '<a class="wiki-fn-content" title="' + self.__cleanhtml(each_content_split[1]) + '" href="#fn-' + str(self.footnote_i) + '"><span id="rfn-' + str(self.footnote_i) + '" class="target"></span>[' + str(self.footnote_i) + ']</a>'
                         
                         
                     elif len(each_content_split) == 1:
                         self.footnote[self.footnote_i] = ""
-                        text += '<a class="wiki-fn-content" title="' + self.cleanhtml(self.footnote[each_content_split[0]]) + '" href="#fn-' + each_content_split[0] + '"><span id="rfn-' + str(self.footnote_i) + '" class="target"></span>[' + each_content_split[0] + ']</a>'
+                        text += '<a class="wiki-fn-content" title="' + self.__cleanhtml(self.footnote[each_content_split[0]]) + '" href="#fn-' + each_content_split[0] + '"><span id="rfn-' + str(self.footnote_i) + '" class="target"></span>[' + each_content_split[0] + ']</a>'
                         
                     else:
                         self.footnote[each_content_split[0]] = each_content_split[1]
-                        text += '<a class="wiki-fn-content" title="' + self.cleanhtml(each_content_split[1]) + '" href="#fn-' + each_content_split[0] + '"><span id="rfn-' + str(self.footnote_i) + '" class="target"></span>[' + each_content_split[0] + ']</a>'
+                        text += '<a class="wiki-fn-content" title="' + self.__cleanhtml(each_content_split[1]) + '" href="#fn-' + each_content_split[0] + '"><span id="rfn-' + str(self.footnote_i) + '" class="target"></span>[' + each_content_split[0] + ']</a>'
                         
                 content = []
                     
@@ -416,10 +422,7 @@ class NamuMarkParser:
                 
         return text
     
-    
-    
-        
-    def text_blockquote(self, text):
+    def __text_blockquote(self, text):
         if not '>' in text:
             return text
     
@@ -449,7 +452,7 @@ class NamuMarkParser:
                 is_start = False
         return new_line
         
-    def text_comment(self, text):
+    def __text_comment(self, text):
         if not '##' in text:
             return text
     
@@ -459,18 +462,18 @@ class NamuMarkParser:
            
         return text
 
-    def text_hr(self, text):
+    def __text_hr(self, text):
         if '----' in text:
             text = re.sub(r'^\-{4,9}$', '<hr>', text, 0, re.M)
         return text
         
-    def text_indent(self, text):
+    def __text_indent(self, text):
         line = text.split("\n")
         is_start = False
         new_line = ""
         for key, each_line in enumerate(line):
             if each_line.startswith(' '):
-                each_line = self.text_indent(each_line[1:])
+                each_line = self.__text_indent(each_line[1:])
                 if is_start == False:
                     new_line += '<div class="wiki-indent"><p>'+ "\n" + each_line + "\n"
                     is_start = True
@@ -490,7 +493,7 @@ class NamuMarkParser:
                 is_start = False
         return new_line
         
-    def text_footnote(self):
+    def __text_footnote(self):
         if len(self.footnote) == 0:
             return ""
 
@@ -508,7 +511,7 @@ class NamuMarkParser:
             del(self.footnote[key])
         return s + "</div>"
 
-    def text_unorderd_list(self, text):
+    def __text_unorderd_list(self, text):
         if not '*' in text:
             return text
     
@@ -556,7 +559,7 @@ class NamuMarkParser:
         
         return new_line
         
-    def text_orderd_list(self, text):
+    def __text_orderd_list(self, text):
         if not '1.' in text and not 'A.' in text and not 'a.' in text and not 'I.' in text and not 'i.' in text:
             return text
     
@@ -625,7 +628,7 @@ class NamuMarkParser:
         
         return new_line
         
-    def text_table(self, text):
+    def __text_table(self, text):
         if not '||' in text:
             return text
     
@@ -794,7 +797,7 @@ class NamuMarkParser:
             
         return new_line
         
-    def text_math(self, text):
+    def __text_math(self, text):
         if not '<math>' in text:
             return text
     
@@ -804,7 +807,7 @@ class NamuMarkParser:
                 text = text.replace('<math>' + n + '</math>', '[math]' + n + '[/math]')
         return text
         
-    def text_paragraph(self, text):
+    def __text_paragraph(self, text):
         if not '=' in text:
             return False
     
@@ -976,7 +979,7 @@ class NamuMarkParser:
                     
         return True
         
-    def text_toc(self):
+    def __text_toc(self):
         if len(self.toc) == 0:
             return ""
     
@@ -984,6 +987,7 @@ class NamuMarkParser:
         last_count = 0
         div_count = 0
         for idx, each in enumerate(self.toc):
+            each[1] = self.__parse_defs_singleline(each[1])
             if idx == 0:
                 text += '<span class="toc-item">\n<a href="#s-' + each[0] + '">' + each[0] + '</a>\n. ' + each[1] + '\n</span>\n'
             else:
@@ -1007,7 +1011,7 @@ class NamuMarkParser:
         text += '</div>\n</div>'
         return text
         
-    def cleanhtml(self, raw_html):
+    def __cleanhtml(self, raw_html):
         cleanr = re.compile('<.*?>')
         cleantext = re.sub(cleanr, '', raw_html)
         return cleantext
