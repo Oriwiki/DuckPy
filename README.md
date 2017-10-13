@@ -29,7 +29,7 @@ db = {
     }
 }
 
-mainpage_title = "DuckPy"
+mainpage_title = "DuckPy:FrontPage"
 ```
 
 그리고나서 아래 명령을 입력합니다. 그러면 http://localhost:8000 에 접속할 수 있는 임시 서버를 돌릴 수 있습니다.
