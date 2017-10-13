@@ -11,15 +11,38 @@ class NamuMarkParser:
         self.footnote = OrderedDict()
         self.footnote_i = 0
         self.toc = []
+        self.toc_before = ""
         self.input = input
         self.title = title
 
     def parse(self):
         start_time = time.time()
         text = ""
+        input = self.input
+        self.text_paragraph(input)
+
+        if len(self.toc) > 0:
+            if self.toc_before != "":
+                text += self.parse_defs(self.toc_before)
+            for idx, each_toc in enumerate(self.toc):
+                text += '<h' + str(each_toc[2]) + ' class="wiki-heading"><a id="s-' + each_toc[0] + '" href="#toc">' + each_toc[0] + '.</a>' + each_toc[1] + '<span class="wiki-edit-section"><a href="/edit/' + quote(self.title) + '?section=' + str(idx + 1) + '" rel="nofollow">[편집]</a></span></h' + str(each_toc[2]) + '>\n'
+                text += self.parse_defs(each_toc[3])
+        else:
+            text += self.parse_defs(input)
+        text += self.text_footnote()
+        
+        print(self.toc)
+        
+        end_time = time.time()
+        print('parse 처리 시간: ', end_time - start_time)
+        
+        return text
+        
+    def parse_defs(self, input):
+        text = ""
     
         # muliline
-        input = self.text_blockquote(self.input)
+        input = self.text_blockquote(input)
         input = self.text_folding(input)
         input = self.text_div(input)
         input = self.text_syntax(input)
@@ -27,7 +50,6 @@ class NamuMarkParser:
         input = self.text_orderd_list(input)
         input = self.text_table(input)
         input = self.text_indent(input)
-        input = self.text_paragraph(input)
 
 
         # singleline
@@ -57,20 +79,13 @@ class NamuMarkParser:
             line = re.sub(r'{{{(.*)(</.*>)}}}', r"<code>\1</code>\2", line)
             
             text += line
-            if key == 0:
+            if key == 0 and line == "":
                 pass
             elif key < len(lines) - 1:
-                text += "\n<br />"
-            
-
-        text += self.text_footnote()
-        
-        print(self.toc)
-        
-        end_time = time.time()
-        print('parse 처리 시간: ', end_time - start_time)
-        
+                text += "<br />\n"
+                
         return text
+
 
     def text_foramting(self, text):
         bold = QuotedString("'''")
@@ -227,8 +242,9 @@ class NamuMarkParser:
         return text
         
     def text_macro(self, text):
-        if not "[" in text or not "[age(" in text or not "[dday(" in text:
+        if not "[" in text and not "[age(" in text and not "[dday(" in text:
             return text
+            
     
         now = time.localtime()
         s = "%04d-%02d-%02d %02d:%02d:%02d" % (now.tm_year, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec)
@@ -540,7 +556,7 @@ class NamuMarkParser:
         return new_line
         
     def text_orderd_list(self, text):
-        if not '1.' in text or not 'A.' in text or not 'a.' in text or not 'I.' in text or not 'i.' in text:
+        if not '1.' in text and not 'A.' in text and not 'a.' in text and not 'I.' in text and not 'i.' in text:
             return text
     
         line = text.split("\n")
@@ -795,11 +811,11 @@ class NamuMarkParser:
         new_line = ""
         
         for key, line in enumerate(lines):
-            line = line.replace('\n', '')
-            if line.startswith('======') and line.endswith('======'):
+            if line.startswith('======') and line.endswith('======\n'):
+                line = line.replace('\n', '')
                 if len(self.toc) == 0:
                     self.toc.append(['1', line[6:][:-6], 6])
-                    lines[key] = '<h6 class="wiki-heading">\n<a id="s-1" href="#toc">1.</a>' + line[6:][:-6] + '\n</h6>\n'
+                    lines[key] = '<h6 class="wiki-heading"><a id="s-1" href="#toc">1.</a>' + line[6:][:-6] + '</h6>\n'
                 else:
                     lastest = self.toc[len(self.toc) - 1]
                     if lastest[2] < 6:
@@ -822,11 +838,12 @@ class NamuMarkParser:
                             else:
                                 toc_str += each_n + '.'
                         self.toc.append([toc_str, line[6:][:-6], 6])
-                    lines[key] = '<h6 class="wiki=heading">\n<a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[6:][:-6] + '\n</h6>\n'
-            elif line.startswith('=====') and line.endswith('====='):
+                    lines[key] = '<h6 class="wiki=heading"><a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[6:][:-6] + '</h6>\n'
+            elif line.startswith('=====') and line.endswith('=====\n'):
+                line = line.replace('\n', '')
                 if len(self.toc) == 0:
                     self.toc.append(['1', line[5:][:-5], 5])
-                    lines[key] = '<h5 class="wiki-heading">\n<a id="s-1" href="#toc">1.</a>' + line[5:][:-5] + '\n</h5>\n'
+                    lines[key] = '<h5 class="wiki-heading"><a id="s-1" href="#toc">1.</a>' + line[5:][:-5] + '</h5>\n'
                 else:
                     lastest = self.toc[len(self.toc) - 1]
                     if lastest[2] < 5:
@@ -849,11 +866,12 @@ class NamuMarkParser:
                             else:
                                 toc_str += each_n + '.'
                         self.toc.append([toc_str, line[5:][:-5], 5])
-                    lines[key] = '<h5 class="wiki=heading">\n<a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[5:][:-5] + '\n</h5>\n'
-            elif line.startswith('====') and line.endswith('===='):
+                    lines[key] = '<h5 class="wiki=heading"><a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[5:][:-5] + '</h5>\n'
+            elif line.startswith('====') and line.endswith('====\n'):
+                line = line.replace('\n', '')
                 if len(self.toc) == 0:
                     self.toc.append(['1', line[4:][:-4], 4])
-                    lines[key] = '<h4 class="wiki-heading">\n<a id="s-1" href="#toc">1.</a>' + line[4:][:-4] + '\n</h4>\n'
+                    lines[key] = '<h4 class="wiki-heading"><a id="s-1" href="#toc">1.</a>' + line[4:][:-4] + '</h4>\n'
                 else:
                     lastest = self.toc[len(self.toc) - 1]
                     if lastest[2] < 4:
@@ -876,11 +894,12 @@ class NamuMarkParser:
                             else:
                                 toc_str += each_n + '.'
                         self.toc.append([toc_str, line[4:][:-4], 4])
-                    lines[key] = '<h4 class="wiki=heading">\n<a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[4:][:-4] + '\n</h4>\n'
-            elif line.startswith('===') and line.endswith('==='):
+                    lines[key] = '<h4 class="wiki=heading"><a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[4:][:-4] + '</h4>\n'
+            elif line.startswith('===') and line.endswith('===\n'):
+                line = line.replace('\n', '')
                 if len(self.toc) == 0:
                     self.toc.append(['1', line[3:][:-3], 3])
-                    lines[key] = '<h3 class="wiki-heading">\n<a id="s-1" href="#toc">1.</a>' + line[3:][:-3] + '\n</h3>\n'
+                    lines[key] = '<h3 class="wiki-heading"><a id="s-1" href="#toc">1.</a>' + line[3:][:-3] + '</h3>\n'
                 else:
                     lastest = self.toc[len(self.toc) - 1]
                     if lastest[2] < 3:
@@ -903,11 +922,12 @@ class NamuMarkParser:
                             else:
                                 toc_str += each_n + '.'
                         self.toc.append([toc_str, line[3:][:-3], 3])
-                    lines[key] = '<h3 class="wiki=heading">\n<a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[3:][:-3] + '\n</h3>\n'
-            elif line.startswith('==') and line.endswith('=='):
+                    lines[key] = '<h3 class="wiki=heading"><a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[3:][:-3] + '</h3>\n'
+            elif line.startswith('==') and line.endswith('==\n'):
+                line = line.replace('\n', '')
                 if len(self.toc) == 0:
                     self.toc.append(['1', line[2:][:-2], 2])
-                    lines[key] = '<h2 class="wiki-heading">\n<a id="s-1" href="#toc">1.</a>' + line[2:][:-2] + '\n</h2>\n'
+                    lines[key] = '<h2 class="wiki-heading"><a id="s-1" href="#toc">1.</a>' + line[2:][:-2] + '</h2>\n'
                 else:
                     lastest = self.toc[len(self.toc) - 1]
                     if lastest[2] < 2:
@@ -932,11 +952,12 @@ class NamuMarkParser:
                             else:
                                 toc_str += each_n + '.'
                         self.toc.append([toc_str, line[2:][:-2], 2])
-                    lines[key] = '<h2 class="wiki=heading">\n<a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[2:][:-2] + '\n</h2>\n'
-            elif line.startswith('=') and line.endswith('='):
+                    lines[key] = '<h2 class="wiki=heading"><a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[2:][:-2] + '</h2>\n'
+            elif line.startswith('=') and line.endswith('=\n'):
+                line = line.replace('\n', '')
                 if len(self.toc) == 0:
                     self.toc.append(['1', line[1:][:-1], 1])
-                    lines[key] = '<h1 class="wiki-heading">\n<a id="s-1" href="#toc">1.</a>' + line[1:][:-1] + '\n</h1>\n'
+                    lines[key] = '<h1 class="wiki-heading"><a id="s-1" href="#toc">1.</a>' + line[1:][:-1] + '</h1>\n'
                 else:
                     lastest = self.toc[len(self.toc) - 1]
                     if lastest[2] > 1:
@@ -954,7 +975,16 @@ class NamuMarkParser:
                             else:
                                 toc_str += each_n + '.'
                         self.toc.append([toc_str, line[1:][:-1], 1])
-                    lines[key] = '<h1 class="wiki=heading">\n<a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[1:][:-1] + '\n</h1>\n'
+                    lines[key] = '<h1 class="wiki=heading"><a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[1:][:-1] + '</h1>\n'
+            else:
+                if len(self.toc) > 0:
+                    if len(self.toc[len(self.toc) - 1]) == 4:
+                        self.toc[len(self.toc) - 1][3] += line
+                    else:
+                        self.toc[len(self.toc) - 1].append(line)
+                else:
+                    self.toc_before += line
+                    
                 
         for line in lines:
             new_line += line

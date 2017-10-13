@@ -6,14 +6,18 @@ from bs4 import BeautifulSoup
 # Create your views here.
 def index(request):
     input = """
+하핫    
+
+[목차]
 == test ==
 ab
+bbbb
 
 == test2 ==
 ddd
 """
 
-    title = ""
+    title = "test"
     
     soup = BeautifulSoup(NamuMarkParser(input, title).parse(), 'html.parser')
     
