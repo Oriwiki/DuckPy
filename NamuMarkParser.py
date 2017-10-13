@@ -31,8 +31,6 @@ class NamuMarkParser:
             text += self.parse_defs(input)
         text += self.text_footnote()
         
-        print(self.toc)
-        
         end_time = time.time()
         print('parse 처리 시간: ', end_time - start_time)
         
@@ -88,6 +86,9 @@ class NamuMarkParser:
 
 
     def text_foramting(self, text):
+        if not "''" in text and not "~~" in text and not "--" in text and not "__" in text and not "^^" in text and not ",," in text:
+            return text
+    
         bold = QuotedString("'''")
         italic = QuotedString("''")
         strike1 = QuotedString("~~")
@@ -805,7 +806,7 @@ class NamuMarkParser:
         
     def text_paragraph(self, text):
         if not '=' in text:
-            return text
+            return False
     
         lines = text.splitlines(True)
         new_line = ""
@@ -815,7 +816,6 @@ class NamuMarkParser:
                 line = line.replace('\n', '')
                 if len(self.toc) == 0:
                     self.toc.append(['1', line[6:][:-6], 6])
-                    lines[key] = '<h6 class="wiki-heading"><a id="s-1" href="#toc">1.</a>' + line[6:][:-6] + '</h6>\n'
                 else:
                     lastest = self.toc[len(self.toc) - 1]
                     if lastest[2] < 6:
@@ -838,12 +838,10 @@ class NamuMarkParser:
                             else:
                                 toc_str += each_n + '.'
                         self.toc.append([toc_str, line[6:][:-6], 6])
-                    lines[key] = '<h6 class="wiki=heading"><a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[6:][:-6] + '</h6>\n'
             elif line.startswith('=====') and line.endswith('=====\n'):
                 line = line.replace('\n', '')
                 if len(self.toc) == 0:
                     self.toc.append(['1', line[5:][:-5], 5])
-                    lines[key] = '<h5 class="wiki-heading"><a id="s-1" href="#toc">1.</a>' + line[5:][:-5] + '</h5>\n'
                 else:
                     lastest = self.toc[len(self.toc) - 1]
                     if lastest[2] < 5:
@@ -866,12 +864,10 @@ class NamuMarkParser:
                             else:
                                 toc_str += each_n + '.'
                         self.toc.append([toc_str, line[5:][:-5], 5])
-                    lines[key] = '<h5 class="wiki=heading"><a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[5:][:-5] + '</h5>\n'
             elif line.startswith('====') and line.endswith('====\n'):
                 line = line.replace('\n', '')
                 if len(self.toc) == 0:
                     self.toc.append(['1', line[4:][:-4], 4])
-                    lines[key] = '<h4 class="wiki-heading"><a id="s-1" href="#toc">1.</a>' + line[4:][:-4] + '</h4>\n'
                 else:
                     lastest = self.toc[len(self.toc) - 1]
                     if lastest[2] < 4:
@@ -894,12 +890,10 @@ class NamuMarkParser:
                             else:
                                 toc_str += each_n + '.'
                         self.toc.append([toc_str, line[4:][:-4], 4])
-                    lines[key] = '<h4 class="wiki=heading"><a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[4:][:-4] + '</h4>\n'
             elif line.startswith('===') and line.endswith('===\n'):
                 line = line.replace('\n', '')
                 if len(self.toc) == 0:
                     self.toc.append(['1', line[3:][:-3], 3])
-                    lines[key] = '<h3 class="wiki-heading"><a id="s-1" href="#toc">1.</a>' + line[3:][:-3] + '</h3>\n'
                 else:
                     lastest = self.toc[len(self.toc) - 1]
                     if lastest[2] < 3:
@@ -922,12 +916,10 @@ class NamuMarkParser:
                             else:
                                 toc_str += each_n + '.'
                         self.toc.append([toc_str, line[3:][:-3], 3])
-                    lines[key] = '<h3 class="wiki=heading"><a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[3:][:-3] + '</h3>\n'
             elif line.startswith('==') and line.endswith('==\n'):
                 line = line.replace('\n', '')
                 if len(self.toc) == 0:
                     self.toc.append(['1', line[2:][:-2], 2])
-                    lines[key] = '<h2 class="wiki-heading"><a id="s-1" href="#toc">1.</a>' + line[2:][:-2] + '</h2>\n'
                 else:
                     lastest = self.toc[len(self.toc) - 1]
                     if lastest[2] < 2:
@@ -952,12 +944,10 @@ class NamuMarkParser:
                             else:
                                 toc_str += each_n + '.'
                         self.toc.append([toc_str, line[2:][:-2], 2])
-                    lines[key] = '<h2 class="wiki=heading"><a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[2:][:-2] + '</h2>\n'
             elif line.startswith('=') and line.endswith('=\n'):
                 line = line.replace('\n', '')
                 if len(self.toc) == 0:
                     self.toc.append(['1', line[1:][:-1], 1])
-                    lines[key] = '<h1 class="wiki-heading"><a id="s-1" href="#toc">1.</a>' + line[1:][:-1] + '</h1>\n'
                 else:
                     lastest = self.toc[len(self.toc) - 1]
                     if lastest[2] > 1:
@@ -975,7 +965,6 @@ class NamuMarkParser:
                             else:
                                 toc_str += each_n + '.'
                         self.toc.append([toc_str, line[1:][:-1], 1])
-                    lines[key] = '<h1 class="wiki=heading"><a id="s-' + self.toc[len(self.toc) - 1][0] + '" href="#toc">' + self.toc[len(self.toc) - 1][0] + '.</a>' + line[1:][:-1] + '</h1>\n'
             else:
                 if len(self.toc) > 0:
                     if len(self.toc[len(self.toc) - 1]) == 4:
@@ -985,12 +974,7 @@ class NamuMarkParser:
                 else:
                     self.toc_before += line
                     
-                
-        for line in lines:
-            new_line += line
-                
-           
-        return new_line
+        return True
         
     def text_toc(self):
         if len(self.toc) == 0:
