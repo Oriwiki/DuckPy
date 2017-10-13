@@ -9,6 +9,7 @@
 * Django
 * pyparsing
 * BeautifulSoup
+* Django REST framework
 
 향후 더 추가될 수 있습니다.
 
