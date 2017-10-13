@@ -6,16 +6,20 @@ from datetime import datetime
 from collections import OrderedDict
 
 class NamuMarkParser:
-    def __init__(self):
+    def __init__(self, input, title):
         self.nowiki = []
         self.footnote = OrderedDict()
         self.footnote_i = 0
         self.toc = []
-        self.text = ""
+        self.input = input
+        self.title = title
 
-    def parse(self, input, title):
+    def parse(self):
+        start_time = time.time()
+        text = ""
+    
         # muliline
-        input = self.text_blockquote(input)
+        input = self.text_blockquote(self.input)
         input = self.text_folding(input)
         input = self.text_div(input)
         input = self.text_syntax(input)
@@ -52,16 +56,21 @@ class NamuMarkParser:
             #후처리
             line = re.sub(r'{{{(.*)(</.*>)}}}', r"<code>\1</code>\2", line)
             
-            self.text += line
+            text += line
             if key == 0:
                 pass
             elif key < len(lines) - 1:
-                self.text += "\n<br />"
+                text += "\n<br />"
             
 
-        self.text += self.text_footnote()
+        text += self.text_footnote()
         
-        return self.text
+        print(self.toc)
+        
+        end_time = time.time()
+        print('parse 처리 시간: ', end_time - start_time)
+        
+        return text
 
     def text_foramting(self, text):
         bold = QuotedString("'''")
@@ -103,6 +112,9 @@ class NamuMarkParser:
         return text
                     
     def text_sizing(self, text):
+        if not "{{{+" in text:
+            return text
+    
         greet = QuotedString("{{{+", endQuoteChar="}}}")
         
         for i in greet.searchString(text):
@@ -113,6 +125,9 @@ class NamuMarkParser:
         return text
 
     def text_coloring(self, text):
+        if not "{{{#" in text:
+            return text
+    
         greet = QuotedString("{{{#", endQuoteChar="}}}")
         for i in greet.searchString(text):
             for n in i:
@@ -126,6 +141,9 @@ class NamuMarkParser:
         return text
         
     def text_nowiki(self, text):
+        if not "{{{" in text:
+            return text
+    
         greet = QuotedString("{{{", endQuoteChar="}}}", escQuote="}}}")
         for i in greet.searchString(text):
             for n in i:
@@ -136,6 +154,9 @@ class NamuMarkParser:
         return text
 
     def text_nowiki_print(self, text):
+        if len(self.nowiki) == 0:
+            return text
+    
         i = 0
         while i <= len(self.nowiki) - 1:
             text = text.replace("<nowiki" + str(i) + " />", "<code>" + self.nowiki[i] + "</code>")
@@ -143,6 +164,9 @@ class NamuMarkParser:
         return text
         
     def text_link(self, text):
+        if not "[[" in text:
+            return text
+    
         greet = QuotedString("[[", endQuoteChar="]]")
         for i in greet.searchString(text):
             for n in i:
@@ -171,6 +195,9 @@ class NamuMarkParser:
         return text
         
     def text_anchor(self, text):
+        if not "[anchor(" in text:
+            return text
+    
         greet = QuotedString("[anchor(", endQuoteChar=")]")
         for i in greet.searchString(text):
             for n in i:
@@ -178,6 +205,9 @@ class NamuMarkParser:
         return text
         
     def text_youtube(self, text):
+        if not "[youtube(" in text:
+            return text
+            
         greet = QuotedString("[youtube(", endQuoteChar=")]")
         for i in greet.searchString(text):
             for n in i:
@@ -197,6 +227,9 @@ class NamuMarkParser:
         return text
         
     def text_macro(self, text):
+        if not "[" in text or not "[age(" in text or not "[dday(" in text:
+            return text
+    
         now = time.localtime()
         s = "%04d-%02d-%02d %02d:%02d:%02d" % (now.tm_year, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec)
         text = text.replace('[date]', s)
@@ -213,6 +246,7 @@ class NamuMarkParser:
             text = text.replace('[목차]', self.text_toc())
         if "[tableofcontents]" in text:
             text = text.replace('[tableofcontents]', self.text_toc())
+            
         
         greet  = QuotedString("[age(", endQuoteChar=")]")
         for i in greet.searchString(text):
@@ -229,6 +263,9 @@ class NamuMarkParser:
         return text
         
     def text_folding(self, text):
+        if not "{{{#!folding " in text:
+            return text
+    
         greet = QuotedString("{{{#!folding ", endQuoteChar="}}}", multiline=True)
         for i in greet.searchString(text):
             for n in i:
@@ -249,6 +286,9 @@ class NamuMarkParser:
         return text
         
     def text_html(self, text):
+        if not "{{{#!html " in text:
+            return text
+    
         greet = QuotedString("{{{#!html ", endQuoteChar="}}}")
         for i in greet.searchString(text):
             for n in i:
@@ -256,6 +296,9 @@ class NamuMarkParser:
         return text
         
     def text_div(self, text):
+        if not "{{{#!wiki " in text:
+            return text
+    
         greet = QuotedString("{{{#!wiki ", endQuoteChar="}}}", escQuote="}}}", multiline=True)
         for i in greet.searchString(text):
             for n in i:
@@ -274,6 +317,9 @@ class NamuMarkParser:
         return text
 
     def text_syntax(self, text):
+        if not "{{{#!syntax " in text:
+            return text
+    
         greet = QuotedString("{{{#!syntax ", endQuoteChar="}}}", escQuote="}}}", multiline=True)
         for i in greet.searchString(text):
             for n in i:
@@ -295,6 +341,9 @@ class NamuMarkParser:
         return text
         
     def text_closure(self, text):
+        if not "{{|" in text:
+            return text
+    
         greet = QuotedString("{{|", endQuoteChar="|}}")
         for i in greet.searchString(text):
             for n in i:
@@ -354,6 +403,9 @@ class NamuMarkParser:
     
         
     def text_blockquote(self, text):
+        if not '>' in text:
+            return text
+    
         line = text.split("\n")
         is_start = False
         new_line = ""
@@ -381,6 +433,9 @@ class NamuMarkParser:
         return new_line
         
     def text_comment(self, text):
+        if not '##' in text:
+            return text
+    
         for t in (LineStart() + '##' + restOfLine).searchString(text):
             for n in t:
                 text = text.replace('##' + n, '')
@@ -388,7 +443,8 @@ class NamuMarkParser:
         return text
 
     def text_hr(self, text):
-        text = re.sub(r'^\-{4,9}$', '<hr>', text, 0, re.M)
+        if '----' in text:
+            text = re.sub(r'^\-{4,9}$', '<hr>', text, 0, re.M)
         return text
         
     def text_indent(self, text):
@@ -436,6 +492,9 @@ class NamuMarkParser:
         return s + "</div>"
 
     def text_unorderd_list(self, text):
+        if not '*' in text:
+            return text
+    
         line = text.split("\n")
         is_start = False
         new_line = ""
@@ -481,6 +540,9 @@ class NamuMarkParser:
         return new_line
         
     def text_orderd_list(self, text):
+        if not '1.' in text or not 'A.' in text or not 'a.' in text or not 'I.' in text or not 'i.' in text:
+            return text
+    
         line = text.split("\n")
         is_start = False    
         new_line = ""
@@ -547,6 +609,9 @@ class NamuMarkParser:
         return new_line
         
     def text_table(self, text):
+        if not '||' in text:
+            return text
+    
         line = OrderedDict()
         for idx, val in enumerate(text.split("\n")):
             line[idx] = val
@@ -713,6 +778,9 @@ class NamuMarkParser:
         return new_line
         
     def text_math(self, text):
+        if not '<math>' in text:
+            return text
+    
         greet = QuotedString("<math>", endQuoteChar="</math>")
         for i in greet.searchString(text):
             for n in i:
@@ -720,6 +788,9 @@ class NamuMarkParser:
         return text
         
     def text_paragraph(self, text):
+        if not '=' in text:
+            return text
+    
         lines = text.splitlines(True)
         new_line = ""
         
@@ -892,6 +963,9 @@ class NamuMarkParser:
         return new_line
         
     def text_toc(self):
+        if len(self.toc) == 0:
+            return ""
+    
         text = '<div id="toc" class="wiki-macro-toc">\n<div class="toc-indent">\n'
         last_count = 0
         div_count = 0
@@ -920,9 +994,9 @@ class NamuMarkParser:
         return text
         
     def cleanhtml(self, raw_html):
-      cleanr = re.compile('<.*?>')
-      cleantext = re.sub(cleanr, '', raw_html)
-      return cleantext
+        cleanr = re.compile('<.*?>')
+        cleantext = re.sub(cleanr, '', raw_html)
+        return cleantext
 
             
 

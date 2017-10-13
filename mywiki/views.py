@@ -6,12 +6,16 @@ from bs4 import BeautifulSoup
 # Create your views here.
 def index(request):
     input = """
-가나다
-마바사"""
+== test ==
+ab
+
+== test2 ==
+ddd
+"""
 
     title = ""
     
-    soup = BeautifulSoup(NamuMarkParser().parse(input, title), 'html.parser')
+    soup = BeautifulSoup(NamuMarkParser(input, title).parse(), 'html.parser')
     
 
     return render(request, 'wiki.html', {'parse': soup.prettify(), 'title': title})
