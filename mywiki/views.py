@@ -22,12 +22,19 @@ def edit(request, title, section=0):
         else:
             text = Revision.objects.filter(page=page_id).order_by('-id').first().text
         
-        return render(request, 'edit.html', {'title': title, 'text': text})
+        return render(request, 'edit.html', {'title': title, 'text': text, 'preview': ""})
     elif request.method == 'POST':
+        
+        if 'preview' in request.POST:
+            soup = BeautifulSoup(NamuMarkParser(request.POST['text'], title).parse())
+            return render(request, 'edit.html', {'title': title, 'text': request.POST['text'], 'preview': soup.prettify()})
+    
         try:
             Page(title=title).save()
         except IntegrityError:
             pass
+            
+            
         
         Revision(text=request.POST['text'], page=Page.objects.get(title=title), comment=request.POST['comment']).save()
     
