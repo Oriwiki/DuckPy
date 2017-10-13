@@ -13,8 +13,9 @@
 향후 더 추가될 수 있습니다.
 
 ## 사용법
-LocalSettings.py를 생성 후 다음과 같이 DB 정보를 입력합니다. DB 종류는 django에서 지원하는 것이라면 어떤 것이든 상관없습니다.
-```
+LocalSettings.py를 생성 후 다음과 같이 DB 정보와 원하는 FrontPage 제목을 입력합니다. DB 종류는 django에서 지원하는 것이라면 어떤 것이든 상관없습니다.
+
+```python
 db = {
     'default': {
         'ENGINE': 'django.db.backends.mysql',
@@ -25,13 +26,15 @@ db = {
         'PORT': '', # 데이터베이스 포트(보통은 3306)
     }
 }
+
+mainpage_title = "DuckPy"
 ```
 
-아직 Form도 생성하지 않았기 때문에 mywiki/views.py의 input 변수를 수정 후,
+그리고나서 아래 명령을 입력합니다. 그러면 http://localhost:8000 에 접속할 수 있는 임시 서버를 돌릴 수 있습니다.
 ```
 python manage.py runserver
 ```
-하여 임시로 서버를 돌리시고, http://localhost:8000 으로 접속하시길 바랍니다.
+
 
 ## 기타
 버그 레포트는 이슈에 본 github 페이지의 이슈에 등록해주시면 감사하겠습니다.
