@@ -53,8 +53,11 @@ class NamuMarkParser:
             line = re.sub(r'{{{(.*)(</.*>)}}}', r"<code>\1</code>\2", line)
             
             self.text += line
-            if key < len(lines) - 1:
-                self.text += "\n"
+            if key == 0:
+                pass
+            elif key < len(lines) - 1:
+                self.text += "\n<br />"
+            
 
         self.text += self.text_footnote()
         
