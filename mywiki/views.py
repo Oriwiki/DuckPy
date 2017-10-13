@@ -26,7 +26,7 @@ def edit(request, title, section=0):
     elif request.method == 'POST':
         
         if 'preview' in request.POST:
-            soup = BeautifulSoup(NamuMarkParser(request.POST['text'], title).parse())
+            soup = BeautifulSoup(NamuMarkParser(request.POST['text'], title).parse(), "html.parser")
             return render(request, 'edit.html', {'title': title, 'text': request.POST['text'], 'preview': soup.prettify()})
     
         try:

@@ -14,6 +14,7 @@ class NamuMarkParser:
         self.toc_before = ""
         self.input = input
         self.title = title
+        self.category = []
 
     def parse(self):
         start_time = time.time()
@@ -36,6 +37,7 @@ class NamuMarkParser:
             text += self.__parse_defs_multiline(input)
             text += '\n</p>\n'
         text += self.__text_footnote()
+        text += self.__text_category()
         
         end_time = time.time()
         print('parse 처리 시간: ', end_time - start_time)
@@ -201,16 +203,26 @@ class NamuMarkParser:
                 n_split = n.split("|", 1)
                 ex_link = False
                 self_link = False
+                category_link = False
+                
                 if n.startswith("http://"):
                     ex_link = True
                 elif n.startswith("#"):
                     self_link = True
+                elif n.startswith('분류:'):
+                    text = text.replace("[[" + n + "]]", '')
+                    self.category.append(n[3:])
+                    continue
+                elif n.startswith(':분류:'):
+                    category_link = True
                 
                 if len(n_split) == 1:
                     if ex_link == True:
                         text = text.replace("[[" + n + "]]", '<a class="wiki-link-external" href="' + n + '" target="_blank" rel="noopener" title="' + n + '">' + n + '</a>')
                     elif self_link == True:
                         text = text.replace("[[" + n + "]]", '<a class="wiki-self-link" href="' + quote(n, '#') + '" title="' + n + '">' + n + '</a>')
+                    elif category_link == True:
+                        text = text.replace("[[" + n + "]]", '<a class="wiki-self-internal" href="' + quote(n[1:]) + '" title="' + n[1:] + '">' + n[1:] + '</a>')
                     else:
                         text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal" href="/w/' + quote(n, '#') + '" title="' + n + '">' + n + '</a>')
                 elif len(n_split) == 2:
@@ -218,6 +230,8 @@ class NamuMarkParser:
                         text = text.replace("[[" + n + "]]", '<a class="wiki-link-external" href="' + n_split[0] + '" target="_blank" rel="noopener" title="' + n_split[0] + '">' + n_split[1] + '</a>')
                     elif self_link == True:
                         text = text.replace("[[" + n + "]]", '<a class="wiki-self-link" href="' + quote(n_split[0], '#') + '" title="' + n_split[0] + '">' + n_split[1] + '</a>')
+                    elif category_link == True:
+                        text = text.replace("[[" + n + "]]", '<a class="wiki-self-internal" href="' + quote(n_split[0][1:]) + '" title="' + n_split[0][1:] + '">' + n_split[1] + '</a>')
                     else:
                         text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal" href="/w/' + quote(n_split[0], '#') + '" title="' + n_split[0] + '">' + n_split[1] + '</a>')
         return text
@@ -1015,6 +1029,17 @@ class NamuMarkParser:
         for j in range(0, div_count):
             text += '</div>\n'
         text += '</div>\n</div>'
+        return text
+        
+    def __text_category(self):
+        if len(self.category) == 0:
+            return ""
+            
+        text = '<div class="wiki-category"><h2>분류</h2><ul>'
+        for each_category in self.category:
+            text += '<li><a href="/w/' + quote('분류:' + each_category) + '">' + each_category + '</a></li>'
+        text += '</ul></div>'
+        
         return text
         
     def __cleanhtml(self, raw_html):
