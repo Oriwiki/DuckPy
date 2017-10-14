@@ -55,28 +55,10 @@ def edit(request, title=None, section=0):
                 each_category_page.save()
             
             for each_category in now_category - pro_category:
-                try:
-                    each_category_page = Page.objects.get(title=each_category)
-                except ObjectDoesNotExist:
-                    Page(title=each_category, namespace=4, category=str(page.id) + ',').save()
-                else:
-                    if each_category_page.category == None:
-                        each_category_page.category = str(page.id) + ','
-                    else:
-                        each_category_page.category += str(page.id) + ','
-                    each_category_page.save()
+                __save_category(each_category, page.id)
         else:
             for each_category in now_category:
-                try:
-                    each_category_page = Page.objects.get(title=each_category)
-                except ObjectDoesNotExist:
-                    Page(title=each_category, namespace=4, category=str(page.id) + ',').save()
-                else:
-                    if each_category_page.category == None:
-                        each_category_page.category = str(page.id) + ','
-                    else:
-                        each_category_page.category += str(page.id) + ','
-                    each_category_page.save()
+                __save_category(each_category, page.id)
                 
         return redirect('/w/' + title)
         
@@ -133,4 +115,14 @@ def raw(request, title=None, rev=0):
             except ObjectDoesNotExist:
                 return HttpResponseNotFound()
         
-        
+def __save_category(each_category, page_id):
+    try:
+        each_category_page = Page.objects.get(title=each_category)
+    except ObjectDoesNotExist:
+        Page(title=each_category, namespace=4, category=str(page_id) + ',').save()
+    else:
+        if each_category_page.category == None:
+            each_category_page.category = str(page_id) + ','
+        else:
+            each_category_page.category += str(page_id) + ','
+        each_category_page.save()
