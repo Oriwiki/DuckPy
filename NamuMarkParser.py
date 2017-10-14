@@ -44,6 +44,19 @@ class NamuMarkParser:
         
         return text
         
+    def get_category(self):
+        if not '[[분류:' in self.input:
+            return []
+            
+        category = []
+        
+        greet = QuotedString('[[분류:',  endQuoteChar="]]")
+        for i in greet.searchString(self.input):
+            for n in i:
+                category.append('분류:' + n)
+                
+        return category
+        
     def __parse_defs_multiline(self, input):
         text = ""
     

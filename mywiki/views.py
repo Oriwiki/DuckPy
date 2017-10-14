@@ -27,11 +27,12 @@ def edit(request, title=None, section=0):
         
         return render(request, 'edit.html', {'title': title, 'text': text, 'preview': ""})
     elif request.method == 'POST':
-        
+        # 미리보기
         if 'preview' in request.POST:
             soup = BeautifulSoup(NamuMarkParser(request.POST['text'], title).parse(), "html.parser")
             return render(request, 'edit.html', {'title': title, 'text': request.POST['text'], 'preview': soup.prettify()})
     
+        # 저장
         try:
             Page(title=title, namespace=0).save()
         except IntegrityError:
@@ -41,10 +42,42 @@ def edit(request, title=None, section=0):
             page = Page.objects.get(title=title)
             rev = 1
             
-            
-        
         Revision(text=request.POST['text'], page=page, comment=request.POST['comment'], rev=rev).save()
-    
+        
+        # 분류
+        now_category = set(NamuMarkParser(request.POST['text'], title).get_category())
+        if rev > 1:
+            pro_revision = Revision.objects.get(page=page.id, rev=rev - 1)
+            pro_category = set(NamuMarkParser(pro_revision.text, title).get_category())
+            for each_category in pro_category - now_category:
+                each_category_page = Page.objects.get(title=each_category)
+                each_category_page.category = each_category_page.category.replace(str(page.id) + ',', '')
+                each_category_page.save()
+            
+            for each_category in now_category - pro_category:
+                try:
+                    each_category_page = Page.objects.get(title=each_category)
+                except ObjectDoesNotExist:
+                    Page(title=each_category, namespace=4, category=str(page.id) + ',').save()
+                else:
+                    if each_category_page.category == None:
+                        each_category_page.category = str(page.id) + ','
+                    else:
+                        each_category_page.category += str(page.id) + ','
+                    each_category_page.save()
+        else:
+            for each_category in now_category:
+                try:
+                    each_category_page = Page.objects.get(title=each_category)
+                except ObjectDoesNotExist:
+                    Page(title=each_category, namespace=4, category=str(page.id) + ',').save()
+                else:
+                    if each_category_page.category == None:
+                        each_category_page.category = str(page.id) + ','
+                    else:
+                        each_category_page.category += str(page.id) + ','
+                    each_category_page.save()
+                
         return redirect('/w/' + title)
         
 def view(request, title=None, rev=0):
