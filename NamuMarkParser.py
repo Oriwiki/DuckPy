@@ -382,10 +382,10 @@ class NamuMarkParser:
         return text
         
     def __text_html(self, text):
-        if not "{{{#!html " in text:
+        if not "{{{#!html" in text:
             return text
     
-        greet = QuotedString("{{{#!html ", endQuoteChar="}}}")
+        greet = QuotedString("{{{#!html", endQuoteChar="}}}")
         for i in greet.searchString(text):
             for n in i:
                 text = text.replace('{{{#!html' + n + "}}}", n)
