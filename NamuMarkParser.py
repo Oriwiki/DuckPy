@@ -701,6 +701,7 @@ class NamuMarkParser:
         
         new_line = ""
         is_start = False
+        isnt_end = False
         
 
         line_i = 0
@@ -710,14 +711,24 @@ class NamuMarkParser:
         caption = []
         each_caption = ""
         for each_line in line.values():
+            each_line = each_line.replace('\n', '')
             if each_line.startswith('||'):
-                if is_start == False:
-                    table_line_n.append([])
-                is_start = True
-                td_list = each_line.split('||')
-                del(td_list[0], td_list[len(td_list) - 1])
-                tr_list.append(td_list)
-                table_line_n[len(table_line_n) - 1].append(line_i)
+                if each_line.endswith('||'):
+                    if is_start == False:
+                        table_line_n.append([])
+                    is_start = True
+                    td_list = each_line.split('||')
+                    del(td_list[0], td_list[len(td_list) - 1])
+                    tr_list.append(td_list)
+                    table_line_n[len(table_line_n) - 1].append(line_i)
+                else:
+                    if is_start == False:
+                        table_line_n.append([])
+                    isnt_end = True
+                    td_list = each_line.split('||')
+                    del(td_list[0])
+                    tr_list.append(td_list)
+                    table_line_n[len(table_line_n) - 1].append(line_i)
             elif each_line.startswith('|'):
                 each_caption = each_line.split('|')[1]
                 each_line = each_line.replace('|' + each_caption + '|', '||')
@@ -729,6 +740,14 @@ class NamuMarkParser:
                 del(td_list[0], td_list[len(td_list) - 1])
                 tr_list.append(td_list)
                 table_line_n[len(table_line_n) - 1].append(line_i)
+            elif each_line.endswith('||'):
+                table_line_n[len(table_line_n) - 1].append(line_i)
+                tr_list[len(tr_list) - 1][len(tr_list[len(tr_list) - 1]) - 1] += '<br />' + each_line[:-2]
+                table.append(tr_list)
+                caption.append(each_caption)
+                each_caption = ""
+                tr_list = []
+                isnt_end = False
             else:
                 if is_start == True:
                     table.append(tr_list)
@@ -736,6 +755,10 @@ class NamuMarkParser:
                     each_caption = ""
                     tr_list = []
                     is_start = False
+                elif isnt_end == True:
+                    table_line_n[len(table_line_n) - 1].append(line_i)
+                    
+                    tr_list[len(tr_list) - 1][len(tr_list[len(tr_list) - 1]) - 1] += '<br />' + each_line
             line_i += 1
         
         
