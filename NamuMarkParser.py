@@ -26,18 +26,21 @@ class NamuMarkParser:
 
         if len(self.toc) > 0:
             if self.toc_before != "":
-                text += '<p>\n'
+                text += '<p>'
                 text += self.__parse_defs_multiline(self.toc_before)
-                text += '\n</p>\n'
+                text += '</p>'
             for idx, each_toc in enumerate(self.toc):
-                text += '<h' + str(each_toc[2]) + ' class="wiki-heading"><a id="s-' + each_toc[0] + '" href="#toc">' + each_toc[0] + '.</a>' + each_toc[1] + '<span class="wiki-edit-section"><a href="/edit/' + quote(self.title) + '?section=' + str(idx + 1) + '" rel="nofollow">[편집]</a></span></h' + str(each_toc[2]) + '>\n'
-                text += '<p>\n'
-                text += self.__parse_defs_multiline(each_toc[3])
-                text += '\n</p>\n'
+                text += '<h' + str(each_toc[2]) + ' class="wiki-heading"><a id="s-' + each_toc[0] + '" href="#toc">' + each_toc[0] + '.</a>' + each_toc[1] + '<span class="wiki-edit-section"><a href="/edit/' + quote(self.title) + '?section=' + str(idx + 1) + '" rel="nofollow">[편집]</a></span></h' + str(each_toc[2]) + '>'
+                text += '<p>'
+                try:
+                    text += self.__parse_defs_multiline(each_toc[3])
+                except IndexError:
+                    pass
+                text += '</p>'
         else:
-            text += '<p>\n'
+            text += '<p>'
             text += self.__parse_defs_multiline(input)
-            text += '\n</p>\n'
+            text += '</p>'
         text += self.__text_footnote()
         text += self.__text_category()
         
@@ -359,17 +362,17 @@ class NamuMarkParser:
         greet = QuotedString("{{{#!folding ", endQuoteChar="}}}", multiline=True)
         for i in greet.searchString(text):
             for n in i:
-                n_split = n.split("\n")
+                n_split = n.splitlines(True)
                 is_first = True
-                s = '<dl class="wiki-folding">' + "\n"
+                s = '<dl class="wiki-folding">'
                 for a in n_split:
                     if is_first == True:
-                        s += '<dt>' + a + '</dt>' + "\n<dd>"
+                        s += '<dt>' + a + '</dt>' + "<dd>"
                         is_first = False
                     elif a == "":
                         continue
                     else:
-                        s += a + "\n"
+                        s += a
                 s += '</dd></dl>'
                 
                 text = text.replace("{{{#!folding" + n + "}}}", s)
@@ -392,14 +395,14 @@ class NamuMarkParser:
         greet = QuotedString("{{{#!wiki ", endQuoteChar="}}}", escQuote="}}}", multiline=True)
         for i in greet.searchString(text):
             for n in i:
-                n_split = n.split("\n")
+                n_split = n.splitlines(True)
                 is_first = True
                 for a in n_split:
                     if is_first == True:
-                        s = '<div' + a + '>' + "\n"
+                        s = '<div' + a + '>'
                         is_first = False
                     else:
-                        s += a + "\n"
+                        s += a
                 s += '</div>'
                 
                 text = text.replace("{{{#!wiki" + n + "}}}", s)
@@ -413,17 +416,17 @@ class NamuMarkParser:
         greet = QuotedString("{{{#!syntax ", endQuoteChar="}}}", escQuote="}}}", multiline=True)
         for i in greet.searchString(text):
             for n in i:
-                n_split = n.split("\n")
+                n_split = n.splitlines(True)
                 is_first = True
                 s = "<pre>"
                 for a in n_split:
                     if is_first == True:
-                        s += '<code class="syntax" data-language="' + a.strip() + '">' + "\n"
+                        s += '<code class="syntax" data-language="' + a.strip() + '">'
                         is_first = False
                     elif a == "":
                         continue
                     else:
-                        s += a + "\n"
+                        s += a
                 s += '</code></pre>'
                 
                 text = text.replace("{{{#!syntax" + n + "}}}", s)
@@ -493,29 +496,27 @@ class NamuMarkParser:
         if not '>' in text:
             return text
     
-        line = text.split("\n")
+        line = text.splitlines(True)
         is_start = False
         new_line = ""
         for key, each_line in enumerate(line):
             if each_line.startswith('>'):
                 each_line = self.__text_blockquote(each_line[1:].lstrip())
                 if is_start == False:
-                    new_line += '<blockquote class="wiki-quote"><p>'+ "\n" + each_line + "\n"
+                    new_line += '<blockquote class="wiki-quote"><p>'+ each_line
                     is_start = True
                 else:
-                    new_line += each_line + "\n"
+                    new_line += each_line
             else:
                 if is_start == True:
-                    new_line += '</p></blockquote>' + "\n" + each_line + "\n"
+                    new_line += '</p></blockquote>' + each_line
                     is_start = False
                 else:
                     new_line += each_line
-                    if key < len(line) - 1:
-                        new_line += "\n"
                      
         if len(line) == 1:
             if is_start == True:
-                new_line += '</p></blockquote>' + "\n"
+                new_line += '</p></blockquote>'
                 is_start = False
         return new_line
         
@@ -535,28 +536,26 @@ class NamuMarkParser:
         return text
         
     def __text_indent(self, text):
-        line = text.split("\n")
+        line = text.splitlines(True)
         is_start = False
         new_line = ""
         for key, each_line in enumerate(line):
             if each_line.startswith(' '):
                 each_line = self.__text_indent(each_line[1:])
                 if is_start == False:
-                    new_line += '<div class="wiki-indent"><p>'+ "\n" + each_line + "\n"
+                    new_line += '<div class="wiki-indent"><p>'+ each_line
                     is_start = True
                 else:
-                    new_line += each_line + "\n"
+                    new_line += each_line
             else:
                 if is_start == True:
-                    new_line += '</p></div>' + "\n" + each_line + "\n"
+                    new_line += '</p></div>' + each_line
                     is_start = False
                 else:
                     new_line += each_line
-                    if key < len(line) - 1:
-                        new_line += "\n"
         if len(line) == 1:
             if is_start == True:
-                new_line += '</p></div>' + "\n"
+                new_line += '</p></div>'
                 is_start = False
         return new_line
         
@@ -564,14 +563,14 @@ class NamuMarkParser:
         if len(self.footnote) == 0:
             return ""
 
-        s = '<div class="wiki-macro-footnote">' + "\n"
+        s = '<div class="wiki-macro-footnote">'
         
         i = 0
         d_footnote = []
         for key, value in self.footnote.items():
             i += 1
             if value != "":
-                s += '<span class="footnote-list"><span id="fn-' + str(key) + '" class="target"></span><a href="#rfn-' + str(i) + '">[' + str(key) + ']</a>' + value + '</span>' + "\n"
+                s += '<span class="footnote-list"><span id="fn-' + str(key) + '" class="target"></span><a href="#rfn-' + str(i) + '">[' + str(key) + ']</a>' + value + '</span>'
             d_footnote.append(key)
         
         for key in d_footnote:
@@ -582,7 +581,7 @@ class NamuMarkParser:
         if not '*' in text:
             return text
     
-        line = text.split("\n")
+        line = text.splitlines
         is_start = False
         new_line = ""
         list_n = 0
@@ -590,38 +589,34 @@ class NamuMarkParser:
             if each_line.lstrip().startswith('*'):
                 now_len = len(each_line) - len(each_line.lstrip())
                 if is_start == False:
-                    new_line += '<ul class="wiki-list">\n<li>' + each_line.lstrip()[1:] + "\n"
+                    new_line += '<ul class="wiki-list"><li>' + each_line.lstrip()[1:]
                     is_start = True
                 elif now_len > pro_len:
-                    new_line += '<ul class="wiki-list">\n<li>' + each_line.lstrip()[1:] + "\n"
+                    new_line += '<ul class="wiki-list"><li>' + each_line.lstrip()[1:]
                     list_n += 1
                 elif now_len < pro_len:
                     for r in range(0, list_n):
                         new_line += "</li></ul>"
                         
-                    new_line += "<li>" + each_line.lstrip()[1:] + "\n"
+                    new_line += "<li>" + each_line.lstrip()[1:]
                     list_n -= 1
                 else:
-                    new_line += "</li>\n<li>" + each_line.lstrip()[1:] + "\n"
+                    new_line += "</li><li>" + each_line.lstrip()[1:]
                     
                 pro_len = now_len
             else:
                 if is_start == True:
                     if list_n == 0:
-                        new_line += "</li></ul>\n"
+                        new_line += "</li></ul>"
                     else:
                         for r in range(0, list_n):
-                            new_line += "</li></ul>\n"
+                            new_line += "</li></ul>"
                             
                     new_line += each_line
-                    if key < len(line) - 1:
-                        new_line += "\n"
                     
                     is_start = False
                 else:
                     new_line += each_line
-                    if key < len(line) - 1:
-                        new_line += "\n"
         
         
         return new_line
@@ -630,7 +625,7 @@ class NamuMarkParser:
         if not '1.' in text and not 'A.' in text and not 'a.' in text and not 'I.' in text and not 'i.' in text:
             return text
     
-        line = text.split("\n")
+        line = text.splitlines(True)
         is_start = False    
         new_line = ""
         list_n = 0
@@ -661,37 +656,32 @@ class NamuMarkParser:
                     ol_start += 'start="1">'
                     
                 if is_start == False:
-                    new_line += ol_start + "\n<li>" + each_line + "\n"
+                    new_line += ol_start + "<li>" + each_line 
                     is_start = True
                 elif now_len > pro_len:
-                    new_line += ol_start + "\n<li>" + each_line + "\n"
+                    new_line += ol_start + "<li>" + each_line
                     list_n += 1
                 elif now_len < pro_len:
                     for r in range(0, list_n):
                         new_line += "</li></ol>"
                         
-                    new_line += "<li>" + each_line + "\n"
+                    new_line += "<li>" + each_line
                     list_n -= 1
                 else:
-                    new_line += "</li>\n<li>" + each_line + "\n"
+                    new_line += "</li><li>" + each_line
                     
                 pro_len = now_len
             else:
                 if is_start == True:
                     if list_n == 0:
-                        new_line += "</li></ol>\n"
+                        new_line += "</li></ol>"
                     else:
                         for r in range(0, list_n):
-                            new_line += "</li></ol>\n"
+                            new_line += "</li></ol>"
                     new_line += each_line
-                    if key < len(line) - 1:
-                        new_line += "\n"
                     is_start = False
                 else:
                     new_line += each_line
-                    if key < len(line) - 1:
-                        new_line += "\n"
-        
         
         return new_line
         
@@ -700,7 +690,7 @@ class NamuMarkParser:
             return text
     
         line = OrderedDict()
-        for idx, val in enumerate(text.split("\n")):
+        for idx, val in enumerate(text.splitlines(True)):
             line[idx] = val
         if line[len(line) - 1] != "":
             line[len(line)] = ""
@@ -864,8 +854,6 @@ class NamuMarkParser:
             
         for key, each_line in line.items():
             new_line += each_line
-            if key < len(line) - 1:
-                new_line += "\n"
             
         return new_line
         
@@ -1055,32 +1043,32 @@ class NamuMarkParser:
         if len(self.toc) == 0:
             return ""
     
-        text = '<div id="toc" class="wiki-macro-toc">\n<div class="toc-indent">\n'
+        text = '<div id="toc" class="wiki-macro-toc"><div class="toc-indent">'
         last_count = 0
         div_count = 0
         for idx, each in enumerate(self.toc):
             each[1] = self.__parse_defs_singleline(each[1])
             if idx == 0:
-                text += '<span class="toc-item">\n<a href="#s-' + each[0] + '">' + each[0] + '</a>\n. ' + each[1] + '\n</span>\n'
+                text += '<span class="toc-item"><a href="#s-' + each[0] + '">' + each[0] + '</a>. ' + each[1] + '</span>'
             else:
                 now_count = each[0].count('.')
                 if last_count == now_count:
-                    text += '<span class="toc-item">\n<a href="#s-' + each[0] + '">' + each[0] + '</a>\n. ' + each[1] + '\n</span>\n'
+                    text += '<span class="toc-item"><a href="#s-' + each[0] + '">' + each[0] + '</a>. ' + each[1] + '</span>'
                 elif last_count < now_count:
-                    text += '<div class="toc-indent">\n<span class="toc-item">\n<a href="#s-' + each[0] + '">' + each[0] + '</a>\n. ' + each[1] + '\n</span>\n'
+                    text += '<div class="toc-indent"><span class="toc-item"><a href="#s-' + each[0] + '">' + each[0] + '</a>. ' + each[1] + '</span>'
                     div_count += 1
                     last_count = now_count
                 elif last_count > now_count:
                     for j in range(0, last_count - now_count):
-                        text += '</div>\n'
+                        text += '</div>'
                     div_count -= last_count - now_count
-                    text += '<span class="toc-item">\n<a href="#s-' + each[0] + '">' + each[0] + '</a>\n. ' + each[1] + '\n</span>\n'
+                    text += '<span class="toc-item"><a href="#s-' + each[0] + '">' + each[0] + '</a>. ' + each[1] + '</span>'
                     last_count = now_count
                 
         
         for j in range(0, div_count):
-            text += '</div>\n'
-        text += '</div>\n</div>'
+            text += '</div>'
+        text += '</div></div>'
         return text
         
     def __text_category(self):
