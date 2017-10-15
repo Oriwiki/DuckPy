@@ -7,6 +7,9 @@ from .models import *
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 import LocalSettings
+import difflib
+from urllib.parse   import quote
+import difflib
 
 # Create your views here.
 
@@ -21,7 +24,7 @@ def edit(request, title=None, section=0):
         try:
             page_id = Page.objects.get(title=title).id
         except ObjectDoesNotExist:
-            return render(request, 'edit.html', {'title': title, 'text': "", 'preview': "", 'section': 0})
+            return render(request, 'edit.html', {'title': title, 'text': "", 'preview': "", 'section': 0, 'url': '/w/' + quote(title)})
         else:
             text = Revision.objects.filter(page=page_id).order_by('-id').first().text
             
@@ -32,7 +35,7 @@ def edit(request, title=None, section=0):
             except IndexError:
                 section = 0
         
-        return render(request, 'edit.html', {'title': title, 'text': text, 'preview': "", 'section': section})
+        return render(request, 'edit.html', {'title': title, 'text': text, 'preview': "", 'section': section, 'url': '/w/' + quote(title)})
         
     elif request.method == 'POST':
         # 미리보기
@@ -129,7 +132,7 @@ def view(request, title=None, rev=0):
                 return HttpResponseNotFound()
                 
         soup = BeautifulSoup(NamuMarkParser(input, title).parse(), 'html.parser')
-        return render(request, 'wiki.html', {'parse': soup.prettify(), 'title': title})
+        return render(request, 'wiki.html', {'parse': soup.prettify(), 'title': title, 'url': '/w/' + quote(title)})
         
 def raw(request, title=None, rev=0):
     if request.method == 'GET':
@@ -151,6 +154,38 @@ def raw(request, title=None, rev=0):
                 return HttpResponse(Revision.objects.get(page=page_id, rev=rev).text, content_type='text/plain; charset="utf-8"')
             except ObjectDoesNotExist:
                 return HttpResponseNotFound()
+                
+def diff(request, title=None):
+    if request.method == 'GET':
+        if title == None:
+            return redirect('/')
+            
+        try:
+            page_id = Page.objects.get(title=title).id
+        except ObjectDoesNotExist:
+            return HttpResponseNotFound()
+            
+        if not 'rev' in request.GET or not 'oldrev' in request.GET:
+            return HttpResponseNotFound()
+            
+        rev = request.GET['rev']
+        oldrev = request.GET['oldrev']
+            
+        try:
+            text = Revision.objects.get(page=page_id, rev=rev).text
+        except ObjectDoesNotExist:
+            return HttpResponseNotFound()
+            
+        try:
+            oldtext = Revision.objects.get(page=page_id, rev=oldrev).text
+        except ObjectDoesNotExist:
+            return HttpResponseNotFound()
+            
+        diff = difflib.HtmlDiff().make_table(oldtext.splitlines(True), text.splitlines(True),  context=True)
+            
+            
+        
+        return render(request, 'diff.html', {'diff': diff, 'title': title, 'url': '/w/' + quote(title)})
         
 def __save_category(each_category, page_id):
     try:
