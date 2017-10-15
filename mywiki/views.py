@@ -41,8 +41,19 @@ def edit(request, title=None, section=0):
             return render(request, 'edit.html', {'title': title, 'text': request.POST['text'], 'preview': soup.prettify()})
     
         # 저장
+        if title.startswith('DuckPy:'):
+            namespace = 1
+        elif title.startswith('파일:'):
+            namespace = 3
+        elif title.startswith('분류:'):
+            namespace = 4
+        elif title.startswith(LocalSettings.project_name + ':'):
+            namespace = 5
+        else:
+            namespace = 0
+        
         try:
-            Page(title=title, namespace=0, is_created=True).save()
+            Page(title=title, namespace=namespace, is_created=True).save()
         except IntegrityError:
             page = Page.objects.get(title=title)
             pro_revision = Revision.objects.filter(page=page.id).order_by('-id').first()
