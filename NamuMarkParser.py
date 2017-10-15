@@ -84,6 +84,8 @@ class NamuMarkParser:
         text_lines = text.splitlines(True)
         text = ''
         for each_line in text_lines:
+            if each_line == '<br />':
+                continue
             text += each_line + '<br />'
             
         return text
