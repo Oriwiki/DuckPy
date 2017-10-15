@@ -67,7 +67,7 @@ def view(request, title=None, rev=0):
         if title == None:
             if request.path.startswith('/w/'):
                  return redirect('/')
-            title = LocalSettings.mainpage_title
+            title = LocalSettings.project_name + ':' + LocalSettings.mainpage_title
             
         try:
             page_id = Page.objects.get(title=title).id
@@ -75,7 +75,7 @@ def view(request, title=None, rev=0):
             if request.path.startswith('/w/'):
                 return HttpResponseNotFound()
             else:
-                Page(title=title, namespace=1, is_created=True).save()
+                Page(title=title, namespace=5, is_created=True).save()
                 page = Page.objects.get(title=title)
                 Revision(text='Hello, World!', page=page, comment='This is testing revision.', rev=1).save()
                 page_id = page.id

@@ -283,7 +283,7 @@ class NamuMarkParser:
         return text
         
     def __text_macro(self, text):
-        if not "[" in text and not "[age(" in text and not "[dday(" in text:
+        if not "[" in text and not "[age(" in text and not "[dday(" in text and not "[pagecount" in text:
             return text
             
     
@@ -306,9 +306,12 @@ class NamuMarkParser:
             
         if "[pagecount]" in text:
             text = text.replace('[pagecount]', str(self.__text_pagecount()))
+        elif "[pagecount(" in text:
+            greet  = QuotedString("[pagecount(", endQuoteChar=")]")
+            for i in greet.searchString(text):
+                for n in i:
+                    text = text.replace("[pagecount(" + n + ")]", str(self.__text_pagecount(namespace=n)))
             
-            
-        
         greet  = QuotedString("[age(", endQuoteChar=")]")
         for i in greet.searchString(text):
             for n in i:
@@ -1063,6 +1066,15 @@ class NamuMarkParser:
     def __text_pagecount(self, namespace=None):
         if namespace == None:
             return Page.objects.filter(is_created=True).count()
+        else:
+            if namespace == "문서":
+                return Page.objects.filter(is_created=True, namespace=0).count()
+            elif namespace == "파일":
+                return Page.objects.filter(is_created=True, namespace=3).count()
+            elif namespace == "사용자":
+                return Page.objects.filter(is_created=True, namespace=2).count()
+            elif namespace == LocalSettings.project_name:
+                return Page.objects.filter(is_created=True, namespace=5).count()
         
         
     def __cleanhtml(self, raw_html):
