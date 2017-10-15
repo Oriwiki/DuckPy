@@ -71,7 +71,7 @@ class NamuMarkParser:
         input = self.__text_orderd_list(input)
         input = self.__text_table(input)
         input = self.__text_indent(input)
-
+        
 
         # singleline
         lines = input.split("\n")
@@ -173,15 +173,18 @@ class NamuMarkParser:
         if not "{{{#" in text:
             return text
     
-        greet = QuotedString("{{{#", endQuoteChar="}}}")
+        greet = QuotedString("{{{#", endQuoteChar="}}}", escQuote='}}}')
         for i in greet.searchString(text):
             for n in i:
+                old_n = n
+                if "{{{#" in n:
+                    n = self.__text_coloring(n)
                 n_split = n.split(" ", 1)
                 # hex 코드 구별
                 if re.search(r'^(?:[0-9a-fA-F]{3}){1,2}$', n_split[0]):
-                    text = text.replace("{{{#" + n + "}}}", '<span class="wiki-color" style="color: #' + n_split[0] + '">' + n_split[1] + '</span>')
+                    text = text.replace("{{{#" + old_n + "}}}", '<span class="wiki-color" style="color: #' + n_split[0] + '">' + n_split[1] + '</span>')
                 elif n_split[0].startswith("!") == False:
-                    text = text.replace("{{{#" + n + "}}}", '<span class="wiki-color" style="color: ' + n_split[0] + '">' + n_split[1] + '</span>')
+                    text = text.replace("{{{#" + old_n + "}}}", '<span class="wiki-color" style="color: ' + n_split[0] + '">' + n_split[1] + '</span>')
 
         return text
         
@@ -473,7 +476,7 @@ class NamuMarkParser:
         new_line = ""
         for key, each_line in enumerate(line):
             if each_line.startswith('>'):
-                each_line = text_blockquote(each_line[1:].lstrip())
+                each_line = self.__text_blockquote(each_line[1:].lstrip())
                 if is_start == False:
                     new_line += '<blockquote class="wiki-quote"><p>'+ "\n" + each_line + "\n"
                     is_start = True
