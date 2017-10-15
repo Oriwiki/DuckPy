@@ -9,7 +9,6 @@ from django.db import IntegrityError
 import LocalSettings
 import difflib
 from urllib.parse   import quote
-import difflib
 
 # Create your views here.
 
