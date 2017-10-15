@@ -318,24 +318,25 @@ class NamuMarkParser:
     
         now = time.localtime()
         s = "%04d-%02d-%02d %02d:%02d:%02d" % (now.tm_year, now.tm_mon, now.tm_mday, now.tm_hour, now.tm_min, now.tm_sec)
-        text = text.replace('[date]', s)
-        text = text.replace('[datetime]', s)
+        text = self.ireplace('[date]', s, text)
         
-        text = text.replace('[br]', '<br />')
+        text = self.ireplace('[datetime]', s, text)
+        
+        text = self.ireplace('[br]', '<br />', text)
         
         if "[각주]" in text:
             text = text.replace('[각주]', self.__text_footnote())
-        if "[footnote]" in text:
-            text = text.replace('[footnote]', self.__text_footnote())
+        if "[footnote]" in text.lower():
+            text = self.ireplace('[footnote]', self.__text_footnote(), text)
             
         if "[목차]" in text:
             text = text.replace('[목차]', self.__text_toc())
-        if "[tableofcontents]" in text:
-            text = text.replace('[tableofcontents]', self.__text_toc())
+        if "[tableofcontents]" in text.lower():
+            text = self.ireplace('[tableofcontents]', self.__text_toc(), text)
             
         if "[pagecount]" in text:
-            text = text.replace('[pagecount]', str(self.__text_pagecount()))
-        elif "[pagecount(" in text:
+            text = self.ireplace('[pagecount]', str(self.__text_pagecount()), text)
+        elif "[pagecount(" in text.lower():
             greet  = QuotedString("[pagecount(", endQuoteChar=")]")
             for i in greet.searchString(text):
                 for n in i:
@@ -581,7 +582,7 @@ class NamuMarkParser:
         if not '*' in text:
             return text
     
-        line = text.splitlines
+        line = text.splitlines(True)
         is_start = False
         new_line = ""
         list_n = 0
@@ -1107,8 +1108,15 @@ class NamuMarkParser:
         cleantext = re.sub(cleanr, '', raw_html)
         return cleantext
 
-            
-
+    def ireplace(self, old, new, text):
+        idx = 0
+        while idx < len(text):
+            index_l = text.lower().find(old.lower(), idx)
+            if index_l == -1:
+                return text
+            text = text[:index_l] + new + text[index_l + len(old):]
+            idx = index_l + len(new) 
+        return text
 
 
 
