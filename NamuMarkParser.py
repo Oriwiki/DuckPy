@@ -83,9 +83,6 @@ class NamuMarkParser:
         for each_line in text_lines:
             text += each_line + '<br />'
             
-        
-
-                
         return text
         
     def __parse_defs_singleline(self, text):
@@ -108,9 +105,6 @@ class NamuMarkParser:
         line = self.__text_math(line)
 
         line = self.__text_nowiki_print(line)
-        
-        #후처리
-        #line = re.sub(r'{{{(.*)(</.*>)}}}', r"<code>\1</code>\2", line)
         
         return line
         
@@ -229,53 +223,6 @@ class NamuMarkParser:
         
         return text
                     
-    def __text_sizing(self, text):
-        if not "{{{+" in text:
-            return text
-    
-        greet = QuotedString("{{{+", endQuoteChar="}}}")
-        
-        for i in greet.searchString(text):
-            for n in i:
-                n_split = n.split(" ", 1)
-                if 1 <= int(n_split[0]) <= 5:
-                    text = text.replace("{{{+" + n + "}}}", '<span class="wiki-size size-' + n_split[0] + '">' + n_split[1] + '</span>')
-        return text
-
-    def __text_coloring(self, text):
-        if not "{{{#" in text:
-            return text
-    
-        greet = QuotedString("{{{#", endQuoteChar="}}}", escQuote='}}}')
-        for i in greet.searchString(text):
-            for n in i:
-                old_n = n
-                if "{{{#" in n:
-                    n = self.__text_coloring(n)
-                elif "{{{" in n:
-                    n = self.__text_nowiki(n)
-                n_split = n.split(" ", 1)
-                # hex 코드 구별
-                if re.search(r'^(?:[0-9a-fA-F]{3}){1,2}$', n_split[0]):
-                    text = text.replace("{{{#" + old_n + "}}}", '<span class="wiki-color" style="color: #' + n_split[0] + '">' + n_split[1] + '</span>')
-                elif n_split[0].startswith("!") == False:
-                    text = text.replace("{{{#" + old_n + "}}}", '<span class="wiki-color" style="color: ' + n_split[0] + '">' + n_split[1] + '</span>')
-
-        return text
-        
-    def __text_nowiki(self, text):
-        if not "{{{" in text:
-            return text
-    
-        greet = QuotedString("{{{", endQuoteChar="}}}", escQuote="}}}")
-        for i in greet.searchString(text):
-            for n in i:
-                if n.startswith(('#', '+')):
-                    return text
-                text = text.replace("{{{" + n + "}}}", "<nowiki" + str(len(self.nowiki)) + " />")
-                self.nowiki.append(n)
-        return text
-
     def __text_nowiki_print(self, text):
         if len(self.nowiki) == 0:
             return text
