@@ -13,7 +13,7 @@ class NamuMarkParser:
         self.footnote_i = 0
         self.toc = []
         self.toc_before = ""
-        self.input = input
+        self.input = input.replace('\r', '')
         self.title = title
         self.category = []
 
@@ -61,36 +61,37 @@ class NamuMarkParser:
         
     def __parse_defs_multiline(self, input):
         text = ""
-    
-        # muliline
-        input = self.__text_blockquote(input)
-        input = self.__text_folding(input)
-        input = self.__text_div(input)
-        input = self.__text_syntax(input)
-        input = self.__text_unorderd_list(input)
-        input = self.__text_orderd_list(input)
-        input = self.__text_table(input)
-        input = self.__text_indent(input)
-        
-
         # singleline
-        lines = input.split("\n")
+        lines = input.splitlines(True)
         for key, line in enumerate(lines):
             line = self.__parse_defs_singleline(line)
             text += line
-            if key == 0 and line == "":
-                pass
-            elif key < len(lines) - 1:
-                text += "<br />\n"
+                
+        # muliline
+        text = self.__text_blockquote(text)
+        text = self.__text_folding(text)
+        text = self.__text_div(text)
+        text = self.__text_syntax(text)
+        text = self.__text_unorderd_list(text)
+        text = self.__text_orderd_list(text)
+        text = self.__text_table(text)
+        text = self.__text_indent(text)
+        
+        
+        text_lines = text.splitlines(True)
+        text = ''
+        for each_line in text_lines:
+            text += each_line + '<br />'
+            
+        
+
                 
         return text
         
     def __parse_defs_singleline(self, text):
         line = text
     
-        line = self.__text_nowiki(line)
-        line = self.__text_sizing(line)
-        line = self.__text_coloring(line)
+        line = self.__text_curly_bracket(line)
         line = self.__text_link(line)
         line = self.__text_foramting(line)
         line = self.__text_anchor(line)
@@ -109,9 +110,81 @@ class NamuMarkParser:
         line = self.__text_nowiki_print(line)
         
         #후처리
-        line = re.sub(r'{{{(.*)(</.*>)}}}', r"<code>\1</code>\2", line)
+        #line = re.sub(r'{{{(.*)(</.*>)}}}', r"<code>\1</code>\2", line)
         
         return line
+        
+    def __text_curly_bracket(self, text):
+        if not '{{{' in text:
+            return text
+        
+        open_bracket = 0
+        close_bracket = 0
+        open = 0
+        open_list = []
+        content_list = []
+        for char in list(text):
+            if char == "{":
+                open_bracket += 1
+                
+                if open > 0:
+                    for i in range(0, open):
+                        open_list[i] += char
+                
+                if open_bracket == 3:
+                    open += 1
+                    open_bracket = 0
+                    open_list.append('{{{')
+                    
+            elif char == "}":
+                close_bracket += 1
+                
+                if close_bracket == 3:
+                    if open > 0:
+                        for i in range(0, open):
+                            open_list[i] += '}}}'
+                    if open == 1:
+                        for i in range(0, len(open_list)):
+                            content_list.append(open_list[i - 1])
+                        open_list = []
+                    
+                        
+                    open -= 1
+                    close_bracket = 0
+                                    
+            else:
+                if open > 0:
+                    if open > len(open_list):
+                        open_list.append(char)
+                    elif open == len(open_list):
+                        for i in range(0, open):
+                            open_list[i] += char
+                    elif open < len(open_list):
+                        for i in range(0, open):
+                            open_list[i] += char
+                        
+        for each_content in sorted(content_list, key=len, reverse=True):
+            for i in QuotedString("{{{", endQuoteChar="}}}", escQuote='}}}').searchString(each_content):
+                for n in i:
+                    if n.startswith('#'):
+                        n = n[1:]
+                        n_split = n.split(" ", 1)
+                        # hex 코드 구별
+                        if re.search(r'^(?:[0-9a-fA-F]{3}){1,2}$', n_split[0]):
+                            text = text.replace("{{{#" + n + "}}}", '<span class="wiki-color" style="color: #' + n_split[0] + '">' + n_split[1] + '</span>')
+                        elif n_split[0].startswith("!") == False:
+                            text = text.replace("{{{#" + n + "}}}", '<span class="wiki-color" style="color: ' + n_split[0] + '">' + n_split[1] + '</span>')
+                    elif n.startswith('+'):
+                        n = n[1:]
+                        n_split = n.split(" ", 1)
+                        if 1 <= int(n_split[0]) <= 5:
+                            text = text.replace("{{{+" + n + "}}}", '<span class="wiki-size size-' + n_split[0] + '">' + n_split[1] + '</span>')
+                    else:
+                        text = text.replace("{{{" + n + "}}}", "<nowiki" + str(len(self.nowiki)) + " />", 1)
+                        self.nowiki.append(n)
+        
+            
+        return text
 
 
     def __text_foramting(self, text):
@@ -179,6 +252,8 @@ class NamuMarkParser:
                 old_n = n
                 if "{{{#" in n:
                     n = self.__text_coloring(n)
+                elif "{{{" in n:
+                    n = self.__text_nowiki(n)
                 n_split = n.split(" ", 1)
                 # hex 코드 구별
                 if re.search(r'^(?:[0-9a-fA-F]{3}){1,2}$', n_split[0]):
