@@ -16,16 +16,24 @@ def edit(request, title=None, section=0):
             return redirect('/')
     
         if 'section' in request.GET:
-            section = request.GET['section']
+            section = int(request.GET['section'])
         
         try:
             page_id = Page.objects.get(title=title).id
         except ObjectDoesNotExist:
-            text = ""
+            return render(request, 'edit.html', {'title': title, 'text': "", 'preview': "", 'section': 0})
         else:
             text = Revision.objects.filter(page=page_id).order_by('-id').first().text
+            
+        if section > 0:
+            toc = NamuMarkParser(text, title).get_toc()
+            try:
+                text = toc[section - 1][3]
+            except IndexError:
+                section = 0
         
-        return render(request, 'edit.html', {'title': title, 'text': text, 'preview': ""})
+        return render(request, 'edit.html', {'title': title, 'text': text, 'preview': "", 'section': section})
+        
     elif request.method == 'POST':
         # 미리보기
         if 'preview' in request.POST:
@@ -37,17 +45,35 @@ def edit(request, title=None, section=0):
             Page(title=title, namespace=0, is_created=True).save()
         except IntegrityError:
             page = Page.objects.get(title=title)
-            rev = Revision.objects.filter(page=page.id).order_by('-id').first().rev + 1
+            pro_revision = Revision.objects.filter(page=page.id).order_by('-id').first()
+            rev = pro_revision.rev + 1
         else:
             page = Page.objects.get(title=title)
             rev = 1
             
-        Revision(text=request.POST['text'], page=page, comment=request.POST['comment'], rev=rev).save()
+        text = request.POST['text']
+        section = int(request.POST['section'])
+        if section > 0:
+            parser = NamuMarkParser(pro_revision.text, title)
+            toc = parser.get_toc()
+            text = parser.toc_before
+            for idx, each_toc in enumerate(toc):
+                text += '=' * each_toc[2]
+                text += each_toc[1]
+                text += '=' * each_toc[2]
+                text += '\n'
+                if idx == section - 1:
+                    text += request.POST['text'] + '\n'
+                else:
+                    try:
+                        text += each_toc[3]
+                    except IndexError:
+                        pass
+        Revision(text=text, page=page, comment=request.POST['comment'], rev=rev).save()
         
         # 분류
-        now_category = set(NamuMarkParser(request.POST['text'], title).get_category())
+        now_category = set(NamuMarkParser(text, title).get_category())
         if rev > 1:
-            pro_revision = Revision.objects.get(page=page.id, rev=rev - 1)
             pro_category = set(NamuMarkParser(pro_revision.text, title).get_category())
             for each_category in pro_category - now_category:
                 each_category_page = Page.objects.get(title=each_category)

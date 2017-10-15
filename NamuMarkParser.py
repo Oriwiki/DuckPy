@@ -62,6 +62,10 @@ class NamuMarkParser:
                 
         return category
         
+    def get_toc(self):
+        self.__text_paragraph(self.input)
+        return self.toc
+        
     def __parse_defs_multiline(self, input):
         text = ""
         # singleline
