@@ -875,14 +875,15 @@ class NamuMarkParser:
         new_line = ""
         
         for key, line in enumerate(lines):
-            if line.startswith('======') and line.endswith('======\n'):
+            if line.startswith('======') and line.replace('\n', '').endswith('======'):
                 line = line.replace('\n', '')
+                content = self.__parse_defs_singleline(line[6:][:-6])
                 if len(self.toc) == 0:
-                    self.toc.append(['1', line[6:][:-6], 6])
+                    self.toc.append(['1', content, 6])
                 else:
                     lastest = self.toc[len(self.toc) - 1]
                     if lastest[2] < 6:
-                        self.toc.append([lastest[0] + '.1', line[6:][:-6], 6])
+                        self.toc.append([lastest[0] + '.1', content, 6])
                     elif lastest[2] > 6:
                         lastest_split = lastest[0].split('.')
                         toc_str = ""
@@ -891,7 +892,7 @@ class NamuMarkParser:
                                 toc_str += str(int(lastest_split[each_n_idx]) + 1) + '.'
                             else:
                                 toc_str += lastest_split[each_n_idx] + '.'
-                        self.toc.append([toc_str[:-1], line[6:][:-6], 6])
+                        self.toc.append([toc_str[:-1], content, 6])
                     elif lastest[2] == 6:
                         lastest_split = lastest[0].split('.')
                         toc_str = ""
@@ -900,15 +901,16 @@ class NamuMarkParser:
                                 toc_str += str(int(each_n) + 1)
                             else:
                                 toc_str += each_n + '.'
-                        self.toc.append([toc_str, line[6:][:-6], 6])
-            elif line.startswith('=====') and line.endswith('=====\n'):
+                        self.toc.append([toc_str, content, 6])
+            elif line.startswith('=====') and line.replace('\n', '').endswith('====='):
                 line = line.replace('\n', '')
+                content = self.__parse_defs_singleline(line[5:][:-5])
                 if len(self.toc) == 0:
-                    self.toc.append(['1', line[5:][:-5], 5])
+                    self.toc.append(['1', content, 5])
                 else:
                     lastest = self.toc[len(self.toc) - 1]
                     if lastest[2] < 5:
-                        self.toc.append([lastest[0] + '.1', line[5:][:-5], 5])
+                        self.toc.append([lastest[0] + '.1', content, 5])
                     elif lastest[2] > 5:
                         lastest_split = lastest[0].split('.')
                         toc_str = ""
@@ -917,7 +919,7 @@ class NamuMarkParser:
                                 toc_str += str(int(lastest_split[each_n_idx]) + 1) + '.'
                             else:
                                 toc_str += lastest_split[each_n_idx] + '.'
-                        self.toc.append([toc_str[:-1], line[5:][:-5], 5])
+                        self.toc.append([toc_str[:-1], content, 5])
                     elif lastest[2] == 5:
                         lastest_split = lastest[0].split('.')
                         toc_str = ""
@@ -926,15 +928,16 @@ class NamuMarkParser:
                                 toc_str += str(int(each_n) + 1)
                             else:
                                 toc_str += each_n + '.'
-                        self.toc.append([toc_str, line[5:][:-5], 5])
-            elif line.startswith('====') and line.endswith('====\n'):
+                        self.toc.append([toc_str, content, 5])
+            elif line.startswith('====') and line.replace('\n', '').endswith('===='):
                 line = line.replace('\n', '')
+                content = self.__parse_defs_singleline(line[4:][:-4])
                 if len(self.toc) == 0:
-                    self.toc.append(['1', line[4:][:-4], 4])
+                    self.toc.append(['1', content, 4])
                 else:
                     lastest = self.toc[len(self.toc) - 1]
                     if lastest[2] < 4:
-                        self.toc.append([lastest[0] + '.1', line[4:][:-4], 4])
+                        self.toc.append([lastest[0] + '.1', content, 4])
                     elif lastest[2] > 4:
                         lastest_split = lastest[0].split('.')
                         toc_str = ""
@@ -943,7 +946,7 @@ class NamuMarkParser:
                                 toc_str += str(int(lastest_split[each_n_idx]) + 1) + '.'
                             else:
                                 toc_str += lastest_split[each_n_idx] + '.'
-                        self.toc.append([toc_str[:-1], line[4:][:-4], 4])
+                        self.toc.append([toc_str[:-1], content, 4])
                     elif lastest[2] == 4:
                         lastest_split = lastest[0].split('.')
                         toc_str = ""
@@ -952,15 +955,16 @@ class NamuMarkParser:
                                 toc_str += str(int(each_n) + 1)
                             else:
                                 toc_str += each_n + '.'
-                        self.toc.append([toc_str, line[4:][:-4], 4])
-            elif line.startswith('===') and line.endswith('===\n'):
+                        self.toc.append([toc_str, lcontent, 4])
+            elif line.startswith('===') and line.replace('\n', '').endswith('==='):
                 line = line.replace('\n', '')
+                content = self.__parse_defs_singleline(line[3:][:-3])
                 if len(self.toc) == 0:
-                    self.toc.append(['1', line[3:][:-3], 3])
+                    self.toc.append(['1', content, 3])
                 else:
                     lastest = self.toc[len(self.toc) - 1]
                     if lastest[2] < 3:
-                        self.toc.append([lastest[0] + '.1', line[3:][:-3], 3])
+                        self.toc.append([lastest[0] + '.1', content, 3])
                     elif lastest[2] > 3:
                         lastest_split = lastest[0].split('.')
                         toc_str = ""
@@ -969,7 +973,7 @@ class NamuMarkParser:
                                 toc_str += str(int(lastest_split[each_n_idx]) + 1) + '.'
                             else:
                                 toc_str += lastest_split[each_n_idx] + '.'
-                        self.toc.append([toc_str[:-1], line[3:][:-3], 3])
+                        self.toc.append([toc_str[:-1], content, 3])
                     elif lastest[2] == 3:
                         lastest_split = lastest[0].split('.')
                         toc_str = ""
@@ -978,15 +982,16 @@ class NamuMarkParser:
                                 toc_str += str(int(each_n) + 1)
                             else:
                                 toc_str += each_n + '.'
-                        self.toc.append([toc_str, line[3:][:-3], 3])
-            elif line.startswith('==') and line.endswith('==\n'):
+                        self.toc.append([toc_str, content, 3])
+            elif line.startswith('==') and line.replace('\n', '').endswith('=='):
                 line = line.replace('\n', '')
+                content = self.__parse_defs_singleline(line[2:][:-2])
                 if len(self.toc) == 0:
-                    self.toc.append(['1', line[2:][:-2], 2])
+                    self.toc.append(['1', content, 2])
                 else:
                     lastest = self.toc[len(self.toc) - 1]
                     if lastest[2] < 2:
-                        self.toc.append([lastest[0] + '.1', line[2:][:-2], 2])
+                        self.toc.append([lastest[0] + '.1', content, 2])
                     elif lastest[2] > 2:
                         lastest_split = lastest[0].split('.')
                         toc_str = ""
@@ -997,7 +1002,7 @@ class NamuMarkParser:
                             else:
                                 toc_str += lastest_split[each_n_idx] + '.'
                         
-                        self.toc.append([toc_str[:-1], line[2:][:-2], 2])
+                        self.toc.append([toc_str[:-1], content, 2])
                     elif lastest[2] == 2:
                         lastest_split = lastest[0].split('.')
                         toc_str = ""
@@ -1006,11 +1011,12 @@ class NamuMarkParser:
                                 toc_str += str(int(each_n) + 1)
                             else:
                                 toc_str += each_n + '.'
-                        self.toc.append([toc_str, line[2:][:-2], 2])
-            elif line.startswith('=') and line.endswith('=\n'):
+                        self.toc.append([toc_str, content, 2])
+            elif line.startswith('=') and line.replace('\n', '').endswith('='):
                 line = line.replace('\n', '')
+                content = self.__parse_defs_singleline(line[1:][:-1])
                 if len(self.toc) == 0:
-                    self.toc.append(['1', line[1:][:-1], 1])
+                    self.toc.append(['1', content, 1])
                 else:
                     lastest = self.toc[len(self.toc) - 1]
                     if lastest[2] > 1:
@@ -1018,7 +1024,7 @@ class NamuMarkParser:
                         toc_str = ""
                         toc_str += str(int(lastest_split[0]) + 1) + '.'
                                 
-                        self.toc.append([toc_str[:-1], line[1:][:-1], 1])
+                        self.toc.append([toc_str[:-1], content, 1])
                     elif lastest[2] == 1:
                         lastest_split = lastest[0].split('.')
                         toc_str = ""
@@ -1027,7 +1033,7 @@ class NamuMarkParser:
                                 toc_str += str(int(each_n) + 1)
                             else:
                                 toc_str += each_n + '.'
-                        self.toc.append([toc_str, line[1:][:-1], 1])
+                        self.toc.append([toc_str, content, 1])
             else:
                 if len(self.toc) > 0:
                     if len(self.toc[len(self.toc) - 1]) == 4:
