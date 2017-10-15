@@ -887,8 +887,8 @@ class NamuMarkParser:
                     elif lastest[2] > 6:
                         lastest_split = lastest[0].split('.')
                         toc_str = ""
-                        for each_n_idx in range(0, 6):
-                            if each_n_idx == 5:
+                        for each_n_idx in range(0, len(lastest_split)):
+                            if each_n_idx == len(lastest_split) - 2:
                                 toc_str += str(int(lastest_split[each_n_idx]) + 1) + '.'
                             else:
                                 toc_str += lastest_split[each_n_idx] + '.'
@@ -914,8 +914,8 @@ class NamuMarkParser:
                     elif lastest[2] > 5:
                         lastest_split = lastest[0].split('.')
                         toc_str = ""
-                        for each_n_idx in range(0, 5):
-                            if each_n_idx == 4:
+                        for each_n_idx in range(0, len(lastest_split)):
+                            if each_n_idx == len(lastest_split) - 2:
                                 toc_str += str(int(lastest_split[each_n_idx]) + 1) + '.'
                             else:
                                 toc_str += lastest_split[each_n_idx] + '.'
@@ -941,8 +941,8 @@ class NamuMarkParser:
                     elif lastest[2] > 4:
                         lastest_split = lastest[0].split('.')
                         toc_str = ""
-                        for each_n_idx in range(0, 4):
-                            if each_n_idx == 3:
+                        for each_n_idx in range(0, len(lastest_split)):
+                            if each_n_idx == len(lastest_split) - 2:
                                 toc_str += str(int(lastest_split[each_n_idx]) + 1) + '.'
                             else:
                                 toc_str += lastest_split[each_n_idx] + '.'
@@ -968,8 +968,8 @@ class NamuMarkParser:
                     elif lastest[2] > 3:
                         lastest_split = lastest[0].split('.')
                         toc_str = ""
-                        for each_n_idx in range(0, 3):
-                            if each_n_idx == 2:
+                        for each_n_idx in range(0, len(lastest_split)):
+                            if each_n_idx == len(lastest_split) - 2:
                                 toc_str += str(int(lastest_split[each_n_idx]) + 1) + '.'
                             else:
                                 toc_str += lastest_split[each_n_idx] + '.'
@@ -996,8 +996,8 @@ class NamuMarkParser:
                         lastest_split = lastest[0].split('.')
                         toc_str = ""
                         
-                        for each_n_idx in range(0, 2):
-                            if each_n_idx == 1:
+                        for each_n_idx in range(0, len(lastest_split)):
+                            if each_n_idx == len(lastest_split) - 2:
                                 toc_str += str(int(lastest_split[each_n_idx]) + 1) + '.'
                             else:
                                 toc_str += lastest_split[each_n_idx] + '.'
