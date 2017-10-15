@@ -4,6 +4,7 @@ import re
 import time
 from datetime import datetime
 from collections import OrderedDict
+from mywiki.models import Page
 
 class NamuMarkParser:
     def __init__(self, input, title):
@@ -302,6 +303,10 @@ class NamuMarkParser:
             text = text.replace('[목차]', self.__text_toc())
         if "[tableofcontents]" in text:
             text = text.replace('[tableofcontents]', self.__text_toc())
+            
+        if "[pagecount]" in text:
+            text = text.replace('[pagecount]', str(self.__text_pagecount()))
+            
             
         
         greet  = QuotedString("[age(", endQuoteChar=")]")
@@ -1054,6 +1059,11 @@ class NamuMarkParser:
         text += '</ul></div>'
         
         return text
+        
+    def __text_pagecount(self, namespace=None):
+        if namespace == None:
+            return Page.objects.filter(is_created=True).count()
+        
         
     def __cleanhtml(self, raw_html):
         cleanr = re.compile('<.*?>')

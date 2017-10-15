@@ -7,6 +7,7 @@ class Page(models.Model):
     backlink = models.TextField(null=True)
     category = models.TextField(null=True)
     is_deleted = models.BooleanField(default=False)
+    is_created = models.BooleanField(default=False)
     
 class Revision(models.Model):
     text = models.TextField()

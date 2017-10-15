@@ -34,7 +34,7 @@ def edit(request, title=None, section=0):
     
         # 저장
         try:
-            Page(title=title, namespace=0).save()
+            Page(title=title, namespace=0, is_created=True).save()
         except IntegrityError:
             page = Page.objects.get(title=title)
             rev = Revision.objects.filter(page=page.id).order_by('-id').first().rev + 1
@@ -75,7 +75,7 @@ def view(request, title=None, rev=0):
             if request.path.startswith('/w/'):
                 return HttpResponseNotFound()
             else:
-                Page(title=title, namespace=1).save()
+                Page(title=title, namespace=1, is_created=True).save()
                 page = Page.objects.get(title=title)
                 Revision(text='Hello, World!', page=page, comment='This is testing revision.', rev=1).save()
                 page_id = page.id
@@ -119,7 +119,7 @@ def __save_category(each_category, page_id):
     try:
         each_category_page = Page.objects.get(title=each_category)
     except ObjectDoesNotExist:
-        Page(title=each_category, namespace=4, category=str(page_id) + ',').save()
+        Page(title=each_category, namespace=4, category=str(page_id) + ',', is_created=False).save()
     else:
         if each_category_page.category == None:
             each_category_page.category = str(page_id) + ','
