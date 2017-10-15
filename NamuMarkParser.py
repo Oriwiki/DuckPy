@@ -21,6 +21,7 @@ class NamuMarkParser:
         start_time = time.time()
         text = ""
         input = self.input
+        
         self.__text_paragraph(input)
 
         if len(self.toc) > 0:
@@ -676,6 +677,8 @@ class NamuMarkParser:
         line = OrderedDict()
         for idx, val in enumerate(text.split("\n")):
             line[idx] = val
+        if line[len(line) - 1] != "":
+            line[len(line)] = ""
             
         
         new_line = ""
@@ -728,10 +731,10 @@ class NamuMarkParser:
             for each_tr in table[table_i]:
                 tr_style = {}
                 td = ""
+                td_opt = {}
+                td_opt['colspan'] = 0
                 for each_td in each_tr:
-                    td_opt = {}
                     td_style = {}
-                    td_opt['colspan'] = 0
                     
                     colspan = re.search(r"<-(\d+)>", each_td)
                     if colspan:
@@ -785,7 +788,6 @@ class NamuMarkParser:
                         else:
                             td_opt['colspan'] += 1
                     else:
-                        
                         td += '<td'
                         for key, value in td_opt.items():
                             if key == 'colspan' and value == 0:
@@ -797,8 +799,13 @@ class NamuMarkParser:
                                 td += key + ': ' + value + ';'
                             td += '"'
                         
-                        td += '><p>' + each_td.strip() + '</p></td>'  + "\n"
+                        td += '><p>' + each_td.strip() + '</p></td>'
                         
+                        td_opt = {}
+                        td_opt['colspan'] = 0
+
+                        
+    
                 tr += '<tr'
                 if len(tr_style) > 0:
                     tr += ' style="'
@@ -806,7 +813,7 @@ class NamuMarkParser:
                         tr += key + ': ' + value + ';'
                     tr += '"'
                 
-                tr += '>\n' + td + '</tr>' + "\n"
+                tr += '>' + td + '</tr>'
             
             div_class = 'wiki-table-wrap'
             div_style = ''
@@ -823,18 +830,17 @@ class NamuMarkParser:
                     table_style += 'width: 100%;'
             
             
-            line[table_line_n[table_i][0]] = '<div class="' + div_class + '" style="' + div_style +'">' + "\n" + '<table class="wiki-table" style="' + table_style + '">' + "\n"
+            line[table_line_n[table_i][0]] = '<div class="' + div_class + '" style="' + div_style +'">' + '<table class="wiki-table" style="' + table_style + '">'
             
             if caption[table_i] != "":
-                line[table_line_n[table_i][0]] += '<caption>' + caption[table_i] + '</caption>\n'
+                line[table_line_n[table_i][0]] += '<caption>' + caption[table_i] + '</caption>'
             
-            line[table_line_n[table_i][0]] += '<tbody>' + "\n" + tr + "</tbody>\n</table>\n</div>"
+            line[table_line_n[table_i][0]] += '<tbody>' + tr + "</tbody></table></div>"
             
         for key, each_line in line.items():
             new_line += each_line
             if key < len(line) - 1:
                 new_line += "\n"
-            
             
         return new_line
         
