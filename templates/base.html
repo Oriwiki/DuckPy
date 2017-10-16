@@ -1,12 +1,185 @@
 <!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <meta http-equiv="x-ua-compatible" content="ie=edge">
+    
     <title>{{title}}</title>
+    
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
+    {% load static %}
+    <link href="{% static "default_skin/css/bootstrap.min.css" %}" rel="stylesheet">
+    <link href="{% static "default_skin/css/mdb.min.css" %}" rel="stylesheet">
+    <link href="{% static "default_skin/css/style.css" %}" rel="stylesheet">
+    
+    <style rel="stylesheet">
+        /* TEMPLATE STYLES */
+
+        main {
+            padding-top: 3rem;
+            padding-bottom: 2rem;
+        }
+
+        .widget-wrapper {
+            padding-bottom: 2rem;
+            border-bottom: 1px solid #e0e0e0;
+            margin-bottom: 2rem;
+        }
+
+        .extra-margins {
+            margin-top: 1rem;
+            margin-bottom: 2.5rem;
+        }
+
+        .divider-new {
+            margin-top: 0;
+        }
+
+        .navbar {
+            background-color: #414a5c;
+        }
+
+        footer.page-footer {
+            background-color: #414a5c;
+            margin-top: 2rem;
+        }
+
+        .list-group-item.active {
+            background-color: #2bbbad;
+            border-color: #2bbbad
+        }
+
+        .list-group-item:not(.active) {
+            color: #222;
+        }
+
+        .list-group-item:not(.active):hover {
+            color: #666;
+        }
+        .card {
+            font-weight: 300;
+        }
+        .navbar .btn-group .dropdown-menu a:hover {
+            color: #000 !important;
+        }
+        .navbar .btn-group .dropdown-menu a:active {
+            color: #fff !important;
+        }
+    </style>
+    
 </head>
 <body>
-    <h1 class="title"><a href="{{url}}">{{title}}</a></h1>
-    {% block content %}
-    {% endblock content %}
+    <header>
+        <!--Navbar-->
+        <nav class="navbar navbar-expand-lg navbar-dark">
+            <div class="container">
+                <a class="navbar-brand" href="/">{{project_name}}</a>
+                <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
+                    aria-expanded="false" aria-label="Toggle navigation">
+                    <span class="navbar-toggler-icon"></span>
+                </button>
+                <div class="collapse navbar-collapse" id="navbarSupportedContent">
+                    <ul class="navbar-nav mr-auto">
+                        <li class="nav-item">
+                            <a class="nav-link" href="/recentchanges">최근 변경</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/recentdiscuss">최근 토론</a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link" href="/random">랜덤</a>
+                        </li>
+                        <li class="nav-item btn-group">
+                            <a class="nav-link dropdown-toggle" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">특수 기능 
+                            </a>
+                            <div class="dropdown-menu dropdown-primary" aria-labelledby="navbarDropdownMenuLink">
+                                <a class="dropdown-item" href="/upload">파일 올리기</a>
+                                <a class="dropdown-item" href="/blockhistory">차단 내역</a>
+                            </div>
+                        </li>
+                    </ul>
+                    <form class="form-inline">
+                        <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
+                    </form>
+                </div>
+            </div>
+        </nav>
+        <!--/.Navbar-->
+    </header>
+
+    <main>
+    
+        <div class="container">
+            <div class="row">
+                <!--Sidebar-->
+                <div class="col-lg-3 wow fadeIn" data-wow-delay="0.2s">
+
+                    <div class="widget-wrapper">
+                        <div class="list-group">
+                            <a href="/w/{{urlencode}}" class="list-group-item">문서</a>
+                            <a href="/edit/{{urlencode}}" class="list-group-item">편집</a>
+                            <a href="/rename/{{urlencode}}" class="list-group-item">이동</a>
+                            <a href="/history/{{urlencode}}" class="list-group-item">역사</a>
+                            <a href="/backlink/{{urlencode}}" class="list-group-item">역링크</a>
+                            <a href="/delete/{{urlencode}}" class="list-group-item">삭제</a>
+                            <a href="/discuss/{{urlencode}}" class="list-group-item">토론</a>
+                        </div>
+                    </div>
+                    
+                </div>
+                <!--/.Sidebar-->
+                
+                <!--Main column-->
+                <div class="col-lg-8">
+
+                    <!--First row-->
+                    <div class="row wow fadeIn" data-wow-delay="0.4s">
+                        <div class="col-lg-12">
+                            <div class="divider-new">
+                                <h2 class="h2-responsive">{{title}}</h2>
+                            </div>
+                            {% block content %}
+                            {% endblock content %}
+
+                    </div>
+                    <!--/.First row-->
+                    
+                    
+            </div>
+        </div>
+    
+    </main>
+    
+    <footer class="page-footer center-on-small-only">
+        <!--Copyright-->
+        <div class="footer-copyright">
+           <div class="container-fluid">
+                Templated by <a href="https://www.MDBootstrap.com"> MDBootstrap.com </a>
+                and Powered by <a href="https://github.com/Oriwiki/DuckPy">DuckPy</a>
+            </div>
+        </div>
+
+        <!--/.Copyright-->
+    </footer>
+    
+    <!-- SCRIPTS -->
+
+    <!-- JQuery -->
+    <script type="text/javascript" src="{% static "default_skin/js/jquery-3.1.1.min.js" %}"></script>
+
+    <!-- Bootstrap dropdown -->
+    <script type="text/javascript" src="{% static "default_skin/js/popper.min.js" %}"></script>
+
+    <!-- Bootstrap core JavaScript -->
+    <script type="text/javascript" src="{% static "default_skin/js/bootstrap.min.js" %}"></script>
+
+    <!-- MDB core JavaScript -->
+    <script type="text/javascript" src="{% static "default_skin/js/mdb.min.js" %}"></script>
+
+    <script>
+        new WOW().init();
+    </script>
+    
     
     <script type="text/x-mathjax-config">
         MathJax.Hub.Config({

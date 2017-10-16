@@ -23,7 +23,7 @@ def edit(request, title=None, section=0):
         try:
             page_id = Page.objects.get(title=title).id
         except ObjectDoesNotExist:
-            return render(request, 'edit.html', {'title': title, 'text': "", 'preview': "", 'section': 0, 'url': '/w/' + quote(title)})
+            return render(request, 'edit.html', {'title': title, 'text': "", 'preview': "", 'section': 0, 'urlencode': quote(title), 'project_name': LocalSettings.project_name})
         else:
             text = Revision.objects.filter(page=page_id).order_by('-id').first().text
             
@@ -34,13 +34,13 @@ def edit(request, title=None, section=0):
             except IndexError:
                 section = 0
         
-        return render(request, 'edit.html', {'title': title, 'text': text, 'preview': "", 'section': section, 'url': '/w/' + quote(title)})
+        return render(request, 'edit.html', {'title': title, 'text': text, 'preview': "", 'section': section, 'urlencode': quote(title), 'project_name': LocalSettings.project_name})
         
     elif request.method == 'POST':
         # 미리보기
         if 'preview' in request.POST:
             soup = BeautifulSoup(NamuMarkParser(request.POST['text'], title).parse(), "html.parser")
-            return render(request, 'edit.html', {'title': title, 'text': request.POST['text'], 'preview': soup.prettify()})
+            return render(request, 'edit.html', {'title': title,'text': request.POST['text'], 'preview': soup.prettify(), 'section': request.POST['section'], 'urlencode': quote(title), 'project_name': LocalSettings.project_name})
     
         # 저장
         if title.startswith('DuckPy:'):
@@ -131,7 +131,7 @@ def view(request, title=None, rev=0):
                 return HttpResponseNotFound()
                 
         soup = BeautifulSoup(NamuMarkParser(input, title).parse(), 'html.parser')
-        return render(request, 'wiki.html', {'parse': soup.prettify(), 'title': title, 'url': '/w/' + quote(title)})
+        return render(request, 'wiki.html', {'parse': soup.prettify(), 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name})
         
 def raw(request, title=None, rev=0):
     if request.method == 'GET':
@@ -184,7 +184,7 @@ def diff(request, title=None):
             
             
         
-        return render(request, 'diff.html', {'diff': diff, 'title': title, 'url': '/w/' + quote(title)})
+        return render(request, 'diff.html', {'diff': diff, 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name})
         
 def __save_category(each_category, page_id):
     try:
