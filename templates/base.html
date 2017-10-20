@@ -139,6 +139,12 @@
                             <div class="divider-new">
                                 <h2 class="h2-responsive" id="title">{{title}}</h2>
                             </div>
+                            {% if error %}
+                                <div class="alert alert-danger">
+                                    <strong>오류!</strong>
+                                    {{ error }}
+                                </div>
+                            {% endif %}
                             {% block content %}
                             {% endblock content %}
 

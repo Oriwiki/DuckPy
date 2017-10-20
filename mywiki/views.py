@@ -113,7 +113,7 @@ def view(request, title=None, rev=0):
             page_id = Page.objects.get(title=title).id
         except ObjectDoesNotExist:
             if request.path.startswith('/w/'):
-                return HttpResponseNotFound()
+                return render(request, 'base.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name, 'function': 'view'}, status=404)
             else:
                 Page(title=title, namespace=5, is_created=True).save()
                 page = Page.objects.get(title=title)
@@ -129,7 +129,7 @@ def view(request, title=None, rev=0):
             try:
                 input = Revision.objects.get(page=page_id, rev=rev).text
             except ObjectDoesNotExist:
-                return HttpResponseNotFound()
+                return render(request, 'base.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name, 'function': 'view'}, status=404)
                 
         soup = BeautifulSoup(NamuMarkParser(input, title).parse(), 'html.parser')
         return render(request, 'wiki.html', {'parse': soup.prettify(), 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name, 'function': 'view'})
@@ -163,23 +163,29 @@ def diff(request, title=None):
         try:
             page_id = Page.objects.get(title=title).id
         except ObjectDoesNotExist:
-            return HttpResponseNotFound()
+            return render(request, 'base.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name}, status=404)
             
         if not 'rev' in request.GET or not 'oldrev' in request.GET:
-            return HttpResponseNotFound()
+            return render(request, 'base.html', {'error': '비교하려는 리비전이 제시되지 않았습니다.', 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name}, status=412)
             
         rev = request.GET['rev']
         oldrev = request.GET['oldrev']
+        
+        if rev == oldrev:
+            return render(request, 'base.html', {'error': '비교하려는 리비전이 같습니다.', 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name}, status=412)
             
         try:
             text = Revision.objects.get(page=page_id, rev=rev).text
         except ObjectDoesNotExist:
-            return HttpResponseNotFound()
+            return render(request, 'base.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name}, status=404)
             
         try:
             oldtext = Revision.objects.get(page=page_id, rev=oldrev).text
         except ObjectDoesNotExist:
-            return HttpResponseNotFound()
+            return render(request, 'base.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name}, status=404)
+            
+        if text == oldtext:
+            return render(request, 'diff.html', {'diff': '동일합니다.', 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name})
             
         diff = difflib.HtmlDiff().make_table(oldtext.splitlines(True), text.splitlines(True),  context=True).replace(' nowrap="nowrap"', '')
         
@@ -193,7 +199,7 @@ def history(request, title=None):
         try:
             page_id = Page.objects.get(title=title).id
         except ObjectDoesNotExist:
-            return HttpResponseNotFound()
+            return render(request, 'base.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name, 'function': 'history'}, status=404)
             
         paginator = Paginator(Revision.objects.filter(page=page_id).order_by('-id').all(), 20)
         
