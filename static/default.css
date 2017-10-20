@@ -1,0 +1,29 @@
+.diff {
+    max-width: 100%;
+    
+}
+
+.diff td.diff_header {
+    word-break: kepp-all;
+}
+
+.diff td:not(.diff_header){
+    word-wrap: break-word;
+    word-break: break-all;
+}
+
+.diff colgroup:nth-child(3) {
+    width: 50%;
+}
+
+.diff colgroup:nth-child(6) {
+    width: 50%;
+}
+
+table.diff {border:medium;}
+.diff_header {background-color:#e0e0e0}
+td.diff_header {text-align:right}
+.diff_next {background-color:#c0c0c0}
+.diff_add {background-color:#aaffaa}
+.diff_chg {background-color:#ffff77}
+.diff_sub {background-color:#ffaaaa}

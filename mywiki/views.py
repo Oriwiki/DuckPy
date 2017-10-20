@@ -9,6 +9,7 @@ from django.db import IntegrityError
 import LocalSettings
 import difflib
 from urllib.parse   import quote
+from django.core.paginator import Paginator, EmptyPage
 
 # Create your views here.
 
@@ -23,7 +24,7 @@ def edit(request, title=None, section=0):
         try:
             page_id = Page.objects.get(title=title).id
         except ObjectDoesNotExist:
-            return render(request, 'edit.html', {'title': title, 'text': "", 'preview': "", 'section': 0, 'urlencode': quote(title), 'project_name': LocalSettings.project_name})
+            return render(request, 'edit.html', {'title': title, 'text': "", 'preview': "", 'section': 0, 'urlencode': quote(title), 'project_name': LocalSettings.project_name, 'function': 'edit'})
         else:
             text = Revision.objects.filter(page=page_id).order_by('-id').first().text
             
@@ -34,7 +35,7 @@ def edit(request, title=None, section=0):
             except IndexError:
                 section = 0
         
-        return render(request, 'edit.html', {'title': title, 'text': text, 'preview': "", 'section': section, 'urlencode': quote(title), 'project_name': LocalSettings.project_name})
+        return render(request, 'edit.html', {'title': title, 'text': text, 'preview': "", 'section': section, 'urlencode': quote(title), 'project_name': LocalSettings.project_name, 'function': 'edit'})
         
     elif request.method == 'POST':
         # 미리보기
@@ -131,7 +132,7 @@ def view(request, title=None, rev=0):
                 return HttpResponseNotFound()
                 
         soup = BeautifulSoup(NamuMarkParser(input, title).parse(), 'html.parser')
-        return render(request, 'wiki.html', {'parse': soup.prettify(), 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name})
+        return render(request, 'wiki.html', {'parse': soup.prettify(), 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name, 'function': 'view'})
         
 def raw(request, title=None, rev=0):
     if request.method == 'GET':
@@ -180,11 +181,35 @@ def diff(request, title=None):
         except ObjectDoesNotExist:
             return HttpResponseNotFound()
             
-        diff = difflib.HtmlDiff().make_table(oldtext.splitlines(True), text.splitlines(True),  context=True)
-            
-            
+        diff = difflib.HtmlDiff().make_table(oldtext.splitlines(True), text.splitlines(True),  context=True).replace(' nowrap="nowrap"', '')
         
         return render(request, 'diff.html', {'diff': diff, 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name})
+        
+def history(request, title=None):
+    if request.method == 'GET':
+        if title == None:
+            return redirect('/')
+            
+        try:
+            page_id = Page.objects.get(title=title).id
+        except ObjectDoesNotExist:
+            return HttpResponseNotFound()
+            
+        paginator = Paginator(Revision.objects.filter(page=page_id).order_by('-id').all(), 20)
+        
+        if not 'page' in request.GET:
+            page = 1
+        else:
+            page = request.GET.get('page')
+            
+        try:
+            historys = paginator.page(page)
+        except EmptyPage:
+            historys = paginator.page(paginator.num_pages)
+            
+        return render(request, 'history.html', {'historys': historys, 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name, 'page': int(page), 'num_pages': paginator.num_pages, 'function': 'history'})
+        
+        
         
 def __save_category(each_category, page_id):
     try:

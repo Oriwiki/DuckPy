@@ -29,6 +29,8 @@ urlpatterns = [
     url(r'^raw/(?P<title>.*)/$', views.raw),
     url(r'^diff/$', views.diff),
     url(r'^diff/(?P<title>.*)/$', views.diff),
+    url(r'^history/$', views.history),
+    url(r'^history/(?P<title>.*)/$', views.history),
 ]
 
 if settings.DEBUG:

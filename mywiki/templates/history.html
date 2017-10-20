@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block content %}
+    <div class="wiki-content">
+        <p><button id="diffbtn" class="btn btn-primary">선택 리비전 비교</button></p>
+        <div class="btn-group" role="group">
+            <a class="btn btn-primary btn-sm {% if page == 1 %}disabled{% endif %}" {% if page != 1 %}href="?page={{ page|add:"-1" }}"{% endif %}>
+                <span class="icon ion-chevron-left"></span>Past
+            </a>
+            <a class="btn btn-primary btn-sm {% if num_pages == page %}disabled{% endif %}" {% if num_pages != page %}href="?page={{ page|add:"1" }}"{% endif %}>
+                <span class="icon ion-chevron-right"></span>Next
+            </a>
+        </div>
+        <ul class="wiki-list">
+            {% for history in historys %}
+                <li>
+                    <time datetime="{{ history.createDate }}" data-format="Y-m-d H:i:s">{{ history.createDate }}</time>
+                    <span style="font-size: 8pt;">(<a href="/w/{{ urlencode }}?rev={{ history.rev }}">보기</a> | <a href="/raw/{{ urlencode }}?rev={{ history.rev }}">RAW</a> | <a rel="nofollow" href="/revert/{{ urlencode }}?rev={{ history.rev }}">이 리비전으로 되돌리기</a> | <a href="/diff/{{ urlencode }}?rev={{ history.rev }}&oldrev={{ history.rev|add:"-1" }}">비교</a>)</span>
+                    <input name="oldrev" value="{{ history.rev }}" type="radio">
+                    <input name="rev" value="{{ history.rev }}" type="radio">
+                    <strong>r{{ history.rev }}</strong>
+                    (<span style="color: gray">{{ history.comment }}</span>)
+                </li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endblock content %}

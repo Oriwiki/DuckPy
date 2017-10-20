@@ -11,6 +11,7 @@
     <link href="{% static "default_skin/css/bootstrap.min.css" %}" rel="stylesheet">
     <link href="{% static "default_skin/css/mdb.min.css" %}" rel="stylesheet">
     <link href="{% static "default_skin/css/style.css" %}" rel="stylesheet">
+    <link href="{% static "default.css" %}" rel="stylesheet">
     
     <style rel="stylesheet">
         /* TEMPLATE STYLES */
@@ -116,13 +117,13 @@
 
                     <div class="widget-wrapper">
                         <div class="list-group">
-                            <a href="/w/{{urlencode}}" class="list-group-item">문서</a>
-                            <a href="/edit/{{urlencode}}" class="list-group-item">편집</a>
-                            <a href="/rename/{{urlencode}}" class="list-group-item">이동</a>
-                            <a href="/history/{{urlencode}}" class="list-group-item">역사</a>
-                            <a href="/backlink/{{urlencode}}" class="list-group-item">역링크</a>
-                            <a href="/delete/{{urlencode}}" class="list-group-item">삭제</a>
-                            <a href="/discuss/{{urlencode}}" class="list-group-item">토론</a>
+                            <a href="/w/{{urlencode}}" class="list-group-item {% if function == 'view' %}active{% endif %}">문서</a>
+                            <a href="/edit/{{urlencode}}" class="list-group-item {% if function == 'edit' %}active{% endif %}">편집</a>
+                            <a href="/rename/{{urlencode}}" class="list-group-item {% if function == 'rename' %}active{% endif %}">이동</a>
+                            <a href="/history/{{urlencode}}" class="list-group-item {% if function == 'history' %}active{% endif %}">역사</a>
+                            <a href="/backlink/{{urlencode}}" class="list-group-item {% if function == 'backlink' %}active{% endif %}">역링크</a>
+                            <a href="/delete/{{urlencode}}" class="list-group-item {% if function == 'delete' %}active{% endif %}">삭제</a>
+                            <a href="/discuss/{{urlencode}}" class="list-group-item {% if function == 'discuss' %}active{% endif %}">토론</a>
                         </div>
                     </div>
                     
@@ -136,7 +137,7 @@
                     <div class="row wow fadeIn" data-wow-delay="0.4s">
                         <div class="col-lg-12">
                             <div class="divider-new">
-                                <h2 class="h2-responsive">{{title}}</h2>
+                                <h2 class="h2-responsive" id="title">{{title}}</h2>
                             </div>
                             {% block content %}
                             {% endblock content %}
@@ -180,6 +181,7 @@
         new WOW().init();
     </script>
     
+    <script type="text/javascript" src="{% static "default.js" %}"></script>
     
     <script type="text/x-mathjax-config">
         MathJax.Hub.Config({
