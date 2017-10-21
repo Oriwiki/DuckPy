@@ -4,10 +4,11 @@ import re
 import time
 from datetime import datetime
 from collections import OrderedDict
-from mywiki.models import Page
+from mywiki.models import Page, Revision
+from django.core.exceptions import ObjectDoesNotExist
 
 class NamuMarkParser:
-    def __init__(self, input, title):
+    def __init__(self, input, title, category=True):
         self.nowiki = []
         self.footnote = OrderedDict()
         self.footnote_i = 0
@@ -15,7 +16,10 @@ class NamuMarkParser:
         self.toc_before = ""
         self.input = input.replace('\r', '')
         self.title = title
-        self.category = []
+        if category == True:
+            self.category = []
+        else:
+            self.category = False
 
     def parse(self):
         start_time = time.time()
@@ -260,7 +264,8 @@ class NamuMarkParser:
                     self_link = True
                 elif n.startswith('분류:'):
                     text = text.replace("[[" + n + "]]", '')
-                    self.category.append(n[3:])
+                    if self.category != False:
+                        self.category.append(n[3:])
                     continue
                 elif n.startswith(':분류:'):
                     category_link = True
@@ -318,7 +323,7 @@ class NamuMarkParser:
         return text
         
     def __text_macro(self, text):
-        if not "[" in text and not "[age(" in text and not "[dday(" in text and not "[pagecount" in text:
+        if not "[" in text and not "[age(" in text and not "[dday(" in text and not "[pagecount" in text and not "[include(" in text:
             return text
             
     
@@ -359,6 +364,30 @@ class NamuMarkParser:
             for n in i:
                 b_date = datetime.strptime(n, '%Y-%m-%d')
                 text = text.replace('[dday(' + n + ')]', str(int((datetime.today() - b_date).days)))
+                
+        greet = QuotedString("[include(", endQuoteChar=")]")
+        for i in greet.searchString(text):
+            for n in i:
+                n_split = n.split(',')
+                try:
+                    included_page_jd = Page.objects.get(title=n_split[0]).id
+                except ObjectDoesNotExist:
+                    text = text.replace("[include(" + n + ")]", "")
+                    continue
+                    
+                included_text = Revision.objects.filter(page=included_page_jd).order_by('-id').first().text
+                included_text = NamuMarkParser(included_text, n_split[0], category=False).parse().replace("\n", "")
+                
+                if len(n_split) > 1:
+                    for each_n_split in n_split[1:]:
+                        each_n_split_split = each_n_split.strip().split('=')
+                        var = each_n_split_split[0]
+                        val = each_n_split_split[1]
+                        included_text = included_text.replace(var, val)
+                        
+                    
+                text = text.replace("[include(" + n + ")]", included_text)
+                
                 
         return text
         
@@ -1108,7 +1137,7 @@ class NamuMarkParser:
         return text
         
     def __text_category(self):
-        if len(self.category) == 0:
+        if self.category == False or len(self.category) == 0:
             return ""
             
         text = '<div class="wiki-category"><h2>분류</h2><ul>'
