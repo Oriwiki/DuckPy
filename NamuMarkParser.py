@@ -57,10 +57,14 @@ class NamuMarkParser:
         if not '[[분류:' in self.input:
             return []
             
+        text = ""
+        for line in self.input.splitlines(True):
+            text += self.__text_curly_bracket(line)
+            
         category = []
         
         greet = QuotedString('[[분류:',  endQuoteChar="]]")
-        for i in greet.searchString(self.input):
+        for i in greet.searchString(text):
             for n in i:
                 category.append('분류:' + n)
                 
