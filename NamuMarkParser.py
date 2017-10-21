@@ -406,7 +406,7 @@ class NamuMarkParser:
                 is_first = True
                 for a in n_split:
                     if is_first == True:
-                        s = '<div' + a + '>'
+                        s = '<div' + a.replace("\n", "") + '>'
                         is_first = False
                     else:
                         s += a
