@@ -52,6 +52,8 @@ def edit(request, title=None, section=0):
             namespace = 4
         elif title.startswith(LocalSettings.project_name + ':'):
             namespace = 5
+        elif title.startswith('틀:'):
+            namespace = 6
         else:
             namespace = 0
         
