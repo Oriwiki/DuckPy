@@ -1,3 +1,5 @@
+/* diff */
+
 .diff {
     max-width: 100%;
     
@@ -27,3 +29,9 @@ td.diff_header {text-align:right}
 .diff_add {background-color:#aaffaa}
 .diff_chg {background-color:#ffff77}
 .diff_sub {background-color:#ffaaaa}
+
+/* edit */
+
+form > textarea[name=text] {
+    height: 30rem;
+}

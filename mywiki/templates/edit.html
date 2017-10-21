@@ -4,12 +4,12 @@
     <div>
         <div>{{preview|safe}}</div>
         <form action="/edit/{{title}}/" method="post">
-            <textarea name="text">{{text}}</textarea>
+            <textarea name="text" class="form-control">{{text}}</textarea>
             {% csrf_token %}
-            <input type="text" name="comment">
+            <input type="text" name="comment" placeholder="요약">
             <input type="hidden" name="section" value="{{section}}">
-            <input type="submit" name="preview" value="미리보기">
-            <input type="submit" name="save" value="저장">
+            <input type="submit" class="btn btn-default" name="preview" value="미리보기">
+            <input type="submit" class="btn btn-default" name="save" value="저장">
         </form>
     </div>
 {% endblock content %}

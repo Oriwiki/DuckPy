@@ -31,6 +31,8 @@ urlpatterns = [
     url(r'^diff/(?P<title>.*)/$', views.diff),
     url(r'^history/$', views.history),
     url(r'^history/(?P<title>.*)/$', views.history),
+    url(r'^revert/$', views.revert),
+    url(r'^revert/(?P<title>.*)/$', views.revert),
 ]
 
 if settings.DEBUG:

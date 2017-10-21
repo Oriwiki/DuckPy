@@ -215,6 +215,55 @@ def history(request, title=None):
             
         return render(request, 'history.html', {'historys': historys, 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name, 'page': int(page), 'num_pages': paginator.num_pages, 'function': 'history'})
         
+def revert(request, title=None):
+    if request.method == 'GET':
+        if title == None:
+            return redirect('/')
+            
+        if not 'rev' in request.GET:
+            return render(request, 'base.html', {'error': '되돌리려는 리비전이 제시되지 않았습니다.', 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name}, status=412)
+            
+        rev = request.GET['rev']
+        
+        try:
+            page_id = Page.objects.get(title=title).id
+        except ObjectDoesNotExist:
+            return render(request, 'base.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name, 'function': 'history'}, status=404)
+            
+        try:
+            text = Revision.objects.get(page=page_id, rev=rev).text
+        except ObjectDoesNotExist:
+            return render(request, 'base.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name}, status=404)
+            
+            
+        return render(request, 'revert.html', {'title': title, 'rev': rev, 'text': text, 'urlencode': quote(title), 'project_name': LocalSettings.project_name})
+            
+        
+    elif request.method == 'POST':
+        if title == None:
+            return redirect('/')
+            
+        if not 'rev' in request.POST:
+            return render(request, 'base.html', {'error': '되돌리려는 리비전이 제시되지 않았습니다.', 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name}, status=412)
+            
+        rev = request.POST['rev']
+        
+        try:
+            page = Page.objects.get(title=title)
+        except ObjectDoesNotExist:
+            return render(request, 'base.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name, 'function': 'history'}, status=404)
+            
+        try:
+            revert_revision = Revision.objects.get(page=page.id, rev=rev)
+        except ObjectDoesNotExist:
+            return render(request, 'base.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name}, status=404)
+            
+        new_rev = Revision.objects.filter(page=page.id).order_by('-id').first().rev + 1
+            
+        Revision(text=revert_revision.text, page=page, comment='r' + str(revert_revision.rev) + '으로 되돌림: ' + request.POST['comment'], rev=new_rev).save()
+        
+        return redirect('/w/' + title)
+        
         
         
 def __save_category(each_category, page_id):
