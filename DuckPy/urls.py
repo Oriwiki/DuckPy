@@ -37,6 +37,7 @@ urlpatterns = [
     url(r'^revert/(?P<title>.*)/$', views.revert),
     url(r'^login/$', auth_views.login, name='login', kwargs={'template_name': LocalSettings.default_skin + '/login.html'}),
     url(r'^logout/$', auth_views.logout, name='logout', kwargs={'next_page': '/'}),
+    url(r'^random/$', views.random),
 ]
 
 if settings.DEBUG:

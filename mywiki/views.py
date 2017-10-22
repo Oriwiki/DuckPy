@@ -13,7 +13,7 @@ from django.core.paginator import Paginator, EmptyPage
 import string
 from collections import OrderedDict
 import re
-
+from random import choice
 
 # Create your views here.
 
@@ -413,6 +413,10 @@ def revert(request, title=None):
         
         return redirect('/w/' + title)
         
+def random(request):
+    my_ids = Page.objects.filter(is_deleted=False, is_created=True).values_list('id', flat=True)
+    rand_ids = choice(list(my_ids))
+    return redirect('/w/' + Page.objects.get(id=rand_ids).title)
         
         
 def __save_category(each_category, page_id):
