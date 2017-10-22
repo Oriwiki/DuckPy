@@ -35,3 +35,6 @@ td.diff_header {text-align:right}
 form > textarea[name=text] {
     height: 30rem;
 }
+
+/* wiki */
+.not-exist { color: red; }

@@ -273,25 +273,45 @@ class NamuMarkParser:
                     continue
                 elif n.startswith(':분류:'):
                     category_link = True
-                
+                    
                 if len(n_split) == 1:
                     if ex_link == True:
                         text = text.replace("[[" + n + "]]", '<a class="wiki-link-external" href="' + n + '" target="_blank" rel="noopener" title="' + n + '">' + n + '</a>')
                     elif self_link == True:
                         text = text.replace("[[" + n + "]]", '<a class="wiki-self-link" href="' + quote(n, '#') + '" title="' + n + '">' + n + '</a>')
                     elif category_link == True:
-                        text = text.replace("[[" + n + "]]", '<a class="wiki-self-internal" href="' + quote(n[1:]) + '" title="' + n[1:] + '">' + n[1:] + '</a>')
+                        try:
+                            Page.objects.get(title=n[1:], is_created=True, is_deleted=False)
+                        except ObjectDoesNotExist:
+                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal not-exist" href="' + quote(n[1:]) + '" title="' + n[1:] + '">' + n[1:] + '</a>')
+                        else:
+                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal" href="' + quote(n[1:]) + '" title="' + n[1:] + '">' + n[1:] + '</a>')
                     else:
-                        text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal" href="/w/' + quote(n, '#') + '" title="' + n + '">' + n + '</a>')
+                        try:
+                            Page.objects.get(title=n, is_created=True, is_deleted=False)
+                        except ObjectDoesNotExist:
+                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal not-exist" href="/w/' + quote(n, '#') + '" title="' + n + '">' + n + '</a>')
+                        else:
+                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal" href="/w/' + quote(n, '#') + '" title="' + n + '">' + n + '</a>')
                 elif len(n_split) == 2:
                     if ex_link == True:
                         text = text.replace("[[" + n + "]]", '<a class="wiki-link-external" href="' + n_split[0] + '" target="_blank" rel="noopener" title="' + n_split[0] + '">' + n_split[1] + '</a>')
                     elif self_link == True:
                         text = text.replace("[[" + n + "]]", '<a class="wiki-self-link" href="' + quote(n_split[0], '#') + '" title="' + n_split[0] + '">' + n_split[1] + '</a>')
                     elif category_link == True:
-                        text = text.replace("[[" + n + "]]", '<a class="wiki-self-internal" href="' + quote(n_split[0][1:]) + '" title="' + n_split[0][1:] + '">' + n_split[1] + '</a>')
+                        try:
+                            Page.objects.get(title=n_split[0][1:], is_created=True, is_deleted=False)
+                        except ObjectDoesNotExist:
+                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal not-exist" href="' + quote(n_split[0][1:]) + '" title="' + n_split[0][1:] + '">' + n_split[1] + '</a>')
+                        else:
+                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal" href="' + quote(n_split[0][1:]) + '" title="' + n_split[0][1:] + '">' + n_split[1] + '</a>')
                     else:
-                        text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal" href="/w/' + quote(n_split[0], '#') + '" title="' + n_split[0] + '">' + n_split[1] + '</a>')
+                        try:
+                            Page.objects.get(title=n_split[0], is_created=True, is_deleted=False)
+                        except ObjectDoesNotExist:
+                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal not-exist" href="/w/' + quote(n_split[0], '#') + '" title="' + n_split[0] + '">' + n_split[1] + '</a>')
+                        else:
+                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal" href="/w/' + quote(n_split[0], '#') + '" title="' + n_split[0] + '">' + n_split[1] + '</a>')
         return text
         
     def __text_anchor(self, text):

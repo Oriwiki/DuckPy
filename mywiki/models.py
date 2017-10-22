@@ -21,6 +21,7 @@ class Revision(models.Model):
     
 class Ip(models.Model):
     ip = models.CharField(unique=True, blank=False, max_length=15)
+    user = models.ForeignKey('auth.user', on_delete=models.SET_NULL, null=True)
     
 class Log(models.Model):
     type = models.PositiveIntegerField(blank=False)
