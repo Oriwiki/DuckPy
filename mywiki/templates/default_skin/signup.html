@@ -12,7 +12,7 @@
                 <div class="row wow fadeIn" data-wow-delay="0.4s">
                     <div class="col-lg-12">
                         <div class="divider-new">
-                            <h2 class="h2-responsive" id="title">로그인</h2>
+                            <h2 class="h2-responsive" id="title">회원가입</h2>
                         </div>
                         {% if error %}
                             <div class="alert alert-danger">
@@ -20,14 +20,12 @@
                                 {{ error }}
                             </div>
                         {% endif %}
-                            <form method="post" action="{% url 'login' %}">
+                            <form method="post" action="{% url 'signup' %}">
                                 {% csrf_token %}
-                                <input type="hidden" name="next" value="/?alert=successLogin" />
 
                                 {{ form.as_p }}
 
-                                <button type="submit" class="btn btn-primary">로그인</button>
-                                <a class="btn btn-default" href="{% url 'signup' %}">회원가입</a>
+                                <button type="submit" class="btn btn-primary">회원가입</button>
                             </form>
 
                 </div>

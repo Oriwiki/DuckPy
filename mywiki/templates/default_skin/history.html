@@ -4,24 +4,8 @@
 {% endblock head %}
 {% block content %}
 
-    <div class="container">
-        <div class="row">
             <!--Sidebar-->
-            <div class="col-lg-3 wow fadeIn" data-wow-delay="0.2s">
-
-                <div class="widget-wrapper">
-                    <div class="list-group">
-                        <a href="/w/{{title|urlencode}}" class="list-group-item {% if function == 'view' %}active{% endif %}">문서</a>
-                        <a href="/edit/{{title|urlencode}}" class="list-group-item {% if function == 'edit' %}active{% endif %}">편집</a>
-                        <a href="/rename/{{title|urlencode}}" class="list-group-item {% if function == 'rename' %}active{% endif %}">이동</a>
-                        <a href="/history/{{title|urlencode}}" class="list-group-item {% if function == 'history' %}active{% endif %}">역사</a>
-                        <a href="/backlink/{{title|urlencode}}" class="list-group-item {% if function == 'backlink' %}active{% endif %}">역링크</a>
-                        <a href="/delete/{{title|urlencode}}" class="list-group-item {% if function == 'delete' %}active{% endif %}">삭제</a>
-                        <a href="/discuss/{{title|urlencode}}" class="list-group-item {% if function == 'discuss' %}active{% endif %}">토론</a>
-                    </div>
-                </div>
-                
-            </div>
+                {% include "default_skin/sidebar.html" %}
             <!--/.Sidebar-->
             
             <!--Main column-->
@@ -68,7 +52,5 @@
                 <!--/.First row-->
                 
                 
-        </div>
-    </div>
 
 {% endblock content %}

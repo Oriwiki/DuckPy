@@ -14,6 +14,8 @@ import string
 from collections import OrderedDict
 import re
 from random import choice
+from django.views.generic.edit import CreateView
+from django.contrib.auth.forms import UserCreationForm
 
 # Create your views here.
 
@@ -121,7 +123,7 @@ def edit(request, title=None, section=0):
             for each_category in now_category:
                 __save_category(each_category, page.id)
                 
-        return redirect('/w/' + title)
+        return redirect('/w/' + title + '?alert=successEdit')
         
 def view(request, title=None, rev=0):
     if request.method == 'GET':
@@ -430,3 +432,10 @@ def __save_category(each_category, page_id):
         else:
             each_category_page.category += str(page_id) + ','
         each_category_page.save()
+
+        
+class signup(CreateView):
+    template_name = LocalSettings.default_skin + '/signup.html'
+    form_class = UserCreationForm
+    success_url = "/?alert=successSignup"
+    

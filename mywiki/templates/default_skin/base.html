@@ -120,8 +120,25 @@
     </header>
 
     <main>
-        {% block content %}
-        {% endblock content %}
+        <div class="container">
+            <div class="row">
+                {% if request.GET.alert %}
+                    <div class="alert alert-success col-lg-12">
+                    {% if request.GET.alert == "successLogin" %}
+                        로그인 완료
+                    {% elif request.GET.alert == "successLogout" %}
+                        로그아웃 완료
+                    {% elif request.GET.alert == "successSignup" %}
+                        회원가입 완료
+                    {% elif request.GET.alert == "successEdit" %}
+                        편집 완료
+                    {% endif %}
+                    </div>
+                {% endif %}
+                {% block content %}
+                {% endblock content %}
+            </div>
+        </div>
     </main>
     
     <footer class="page-footer center-on-small-only">

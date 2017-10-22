@@ -35,9 +35,11 @@ urlpatterns = [
     url(r'^history/(?P<title>.*)/$', views.history),
     url(r'^revert/$', views.revert),
     url(r'^revert/(?P<title>.*)/$', views.revert),
-    url(r'^login/$', auth_views.login, name='login', kwargs={'template_name': LocalSettings.default_skin + '/login.html'}),
-    url(r'^logout/$', auth_views.logout, name='logout', kwargs={'next_page': '/'}),
     url(r'^random/$', views.random),
+    url(r'^login/$', auth_views.login, name='login', kwargs={'template_name': LocalSettings.default_skin + '/login.html'}),
+    url(r'^logout/$', auth_views.logout, name='logout', kwargs={'next_page': '/?alert=successLogout'}),
+    url(r'^signup/$', views.signup.as_view(), name='signup'),
+
 ]
 
 if settings.DEBUG:
