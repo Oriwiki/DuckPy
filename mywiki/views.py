@@ -65,6 +65,12 @@ def edit(request, title=None, section=0):
             namespace = 5
         elif title.startswith('틀:'):
             namespace = 6
+        elif title.startswith('사용자:'):
+            if not request.user.is_active or request.user.username != re.sub('\.(css|js)$', '', title[4:]):
+                return render(request, LocalSettings.default_skin + '/edit.html', {'title': title,'text': request.POST['text'], 'section': request.POST['section'], 'error': '사용자 문서는 본인만 편집 가능합니다.'})
+        
+            namespace = 2
+            
         else:
             namespace = 0
             
@@ -425,8 +431,26 @@ def revert(request, title=None):
         pro_revision = Revision.objects.filter(page=page.id).order_by('-id').first()
         new_rev = pro_revision.rev + 1
         increase = len(revert_revision.text) - len(pro_revision.text)
+        
+        # 사용자
+        if request.user.is_active:
+            user = User.objects.get(username=request.user.username)
+            ip = None
+        else:
+            user = None
+            ip_address = get_ip(request)
+            try:
+                ip = Ip.objects.get(ip=ip_address)
+            except ObjectDoesNotExist:
+                Ip(ip=ip_address).save()
+                ip = Ip.objects.get(ip=ip_address)
+                
+        if page.namespace == 2:
+            if not request.user.is_active or request.user.username != re.sub('\.(css|js)$', '', title[4:]):
+                return render(request, LocalSettings.default_skin + '/revert.html', {'title': title,'text': revert_revision.text, 'rev': rev, 'error': '사용자 문서는 본인만 편집 가능합니다.'})
+                
             
-        Revision(text=revert_revision.text, page=page, comment='r' + str(revert_revision.rev) + '으로 되돌림: ' + request.POST['comment'], rev=new_rev, increase=increase).save()
+        Revision(text=revert_revision.text, page=page, comment='r' + str(revert_revision.rev) + '으로 되돌림: ' + request.POST['comment'], rev=new_rev, increase=increase, user=user, ip=ip).save()
         
         return redirect('/w/' + title)
         

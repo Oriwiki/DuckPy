@@ -1,3 +1,5 @@
+{% load model %}
+
 <!DOCTYPE html>
 <head>
     <meta charset="UTF-8">
@@ -69,6 +71,13 @@
             color: #fff !important;
         }
     </style>
+    {% if user.is_active %}
+        <style rel="stylesheet">
+            {% if "사용자:"|add:user.username|add:".css"|get_revision %}
+                {{ "사용자:"|add:user.username|add:".css"|get_revision|get_attribute:"text" }}
+            {% endif %}
+        </style>
+    {% endif %}
     
 </head>
 <body>
@@ -93,8 +102,7 @@
                             <a class="nav-link" href="/random">랜덤</a>
                         </li>
                         <li class="nav-item btn-group">
-                            <a class="nav-link dropdown-toggle" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">특수 기능 
-                            </a>
+                            <a class="nav-link dropdown-toggle" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">특수 기능</a>
                             <div class="dropdown-menu dropdown-primary" aria-labelledby="navbarDropdownMenuLink">
                                 <a class="dropdown-item" href="/upload">파일 올리기</a>
                                 <a class="dropdown-item" href="/blockhistory">차단 내역</a>
@@ -105,13 +113,18 @@
                         <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
                     </form>
                     <ul class="navbar-nav mr-sm-2">
-                        <li class="nav-item">
                             {% if user.is_active %}
-                                <a class="nav-link" href="/logout">로그아웃</a>
+                                <li class="nav-item btn-group">
+                                    <a class="nav-link dropdown-toggle" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{ user.username }}</a>
+                                    <div class="dropdown-menu dropdown-primary" aria-labelledby="navbarDropdownMenuLink">
+                                        <a class="nav-link" href="/logout">로그아웃</a>
+                                    </div>
+                                </li>
                             {% else %}
-                                <a class="nav-link" href="/login">로그인</a>
+                                <li class="nav-item">
+                                    <a class="nav-link" href="/login">로그인</a>
+                                </li>
                             {% endif %}
-                        </li>
                     </ul>
                 </div>
             </div>
@@ -179,5 +192,14 @@
         });
     </script>
     <script type="text/javascript" async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.2/MathJax.js?config=TeX-MML-AM_CHTML"></script>
+    
+    {% if user.is_active %}
+        <script type="text/javascript">
+            {% if "사용자:"|add:user.username|add:".js"|get_revision %}
+                {{ "사용자:"|add:user.username|add:".js"|get_revision|get_attribute:"text" }}
+            {% endif %}
+        </script>
+    {% endif %}
+    
 </body>
 </html>
