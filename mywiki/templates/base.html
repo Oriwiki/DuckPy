@@ -4,7 +4,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <meta http-equiv="x-ua-compatible" content="ie=edge">
     
-    <title>{{title}}</title>
+    
+    {% block head %}
+    {% endblock head %}
     
     <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/font-awesome/4.7.0/css/font-awesome.min.css">
     {% load static %}
@@ -74,7 +76,7 @@
         <!--Navbar-->
         <nav class="navbar navbar-expand-lg navbar-dark">
             <div class="container">
-                <a class="navbar-brand" href="/">{{project_name}}</a>
+                <a class="navbar-brand" href="/">{{PROJECT_NAME}}</a>
                 <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarSupportedContent" aria-controls="navbarSupportedContent"
                     aria-expanded="false" aria-label="Toggle navigation">
                     <span class="navbar-toggler-icon"></span>
@@ -102,6 +104,15 @@
                     <form class="form-inline">
                         <input class="form-control mr-sm-2" type="text" placeholder="Search" aria-label="Search">
                     </form>
+                    <ul class="navbar-nav mr-sm-2">
+                        <li class="nav-item">
+                            {% if user.is_active %}
+                                <a class="nav-link" href="/logout">로그아웃</a>
+                            {% else %}
+                                <a class="nav-link" href="/login">로그인</a>
+                            {% endif %}
+                        </li>
+                    </ul>
                 </div>
             </div>
         </nav>
@@ -109,52 +120,8 @@
     </header>
 
     <main>
-    
-        <div class="container">
-            <div class="row">
-                <!--Sidebar-->
-                <div class="col-lg-3 wow fadeIn" data-wow-delay="0.2s">
-
-                    <div class="widget-wrapper">
-                        <div class="list-group">
-                            <a href="/w/{{title|urlencode}}" class="list-group-item {% if function == 'view' %}active{% endif %}">문서</a>
-                            <a href="/edit/{{title|urlencode}}" class="list-group-item {% if function == 'edit' %}active{% endif %}">편집</a>
-                            <a href="/rename/{{title|urlencode}}" class="list-group-item {% if function == 'rename' %}active{% endif %}">이동</a>
-                            <a href="/history/{{title|urlencode}}" class="list-group-item {% if function == 'history' %}active{% endif %}">역사</a>
-                            <a href="/backlink/{{title|urlencode}}" class="list-group-item {% if function == 'backlink' %}active{% endif %}">역링크</a>
-                            <a href="/delete/{{title|urlencode}}" class="list-group-item {% if function == 'delete' %}active{% endif %}">삭제</a>
-                            <a href="/discuss/{{title|urlencode}}" class="list-group-item {% if function == 'discuss' %}active{% endif %}">토론</a>
-                        </div>
-                    </div>
-                    
-                </div>
-                <!--/.Sidebar-->
-                
-                <!--Main column-->
-                <div class="col-lg-8">
-
-                    <!--First row-->
-                    <div class="row wow fadeIn" data-wow-delay="0.4s">
-                        <div class="col-lg-12">
-                            <div class="divider-new">
-                                <h2 class="h2-responsive" id="title">{{title}}</h2>
-                            </div>
-                            {% if error %}
-                                <div class="alert alert-danger">
-                                    <strong>오류!</strong>
-                                    {{ error }}
-                                </div>
-                            {% endif %}
-                            {% block content %}
-                            {% endblock content %}
-
-                    </div>
-                    <!--/.First row-->
-                    
-                    
-            </div>
-        </div>
-    
+        {% block content %}
+        {% endblock content %}
     </main>
     
     <footer class="page-footer center-on-small-only">

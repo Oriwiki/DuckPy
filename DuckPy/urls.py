@@ -17,6 +17,7 @@ from django.conf.urls import include, url
 from django.contrib import admin
 from mywiki import views
 from django.conf import settings
+from django.contrib.auth import views as auth_views
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
@@ -33,6 +34,8 @@ urlpatterns = [
     url(r'^history/(?P<title>.*)/$', views.history),
     url(r'^revert/$', views.revert),
     url(r'^revert/(?P<title>.*)/$', views.revert),
+    url(r'^login/$', auth_views.login, name='login', kwargs={'template_name': 'login.html'}),
+    url(r'^logout/$', auth_views.logout, name='logout', kwargs={'next_page': '/'}),
 ]
 
 if settings.DEBUG:

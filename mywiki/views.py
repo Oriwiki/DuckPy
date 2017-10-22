@@ -28,7 +28,7 @@ def edit(request, title=None, section=0):
         try:
             page = Page.objects.get(title=title)
         except ObjectDoesNotExist:
-            return render(request, 'edit.html', {'title': title, 'text': "", 'preview': "", 'section': 0, 'project_name': LocalSettings.project_name, 'function': 'edit'})
+            return render(request, 'edit.html', {'title': title, 'text': "", 'preview': "", 'section': 0, 'function': 'edit'})
         else:
             if page.is_created == True:
                 text = Revision.objects.filter(page=page.id).order_by('-id').first().text
@@ -42,13 +42,13 @@ def edit(request, title=None, section=0):
             except IndexError:
                 section = 0
         
-        return render(request, 'edit.html', {'title': title, 'text': text, 'preview': "", 'section': section, 'project_name': LocalSettings.project_name, 'function': 'edit'})
+        return render(request, 'edit.html', {'title': title, 'text': text, 'preview': "", 'section': section, 'function': 'edit'})
         
     elif request.method == 'POST':
         # 미리보기
         if 'preview' in request.POST:
             soup = BeautifulSoup(NamuMarkParser(request.POST['text'], title).parse(), "html.parser")
-            return render(request, 'edit.html', {'title': title,'text': request.POST['text'], 'preview': soup.prettify(), 'section': request.POST['section'], 'project_name': LocalSettings.project_name})
+            return render(request, 'edit.html', {'title': title,'text': request.POST['text'], 'preview': soup.prettify(), 'section': request.POST['section']})
     
         # 저장
         if title.startswith('DuckPy:'):
@@ -134,7 +134,7 @@ def view(request, title=None, rev=0):
             page = Page.objects.get(title=title)
         except ObjectDoesNotExist:
             if request.path.startswith('/w/'):
-                return render(request, 'base.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title, 'project_name': LocalSettings.project_name, 'function': 'view'}, status=404)
+                return render(request, 'base.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title, 'function': 'view'}, status=404)
             else:
                 Page(title=title, namespace=5, is_created=True).save()
                 page = Page.objects.get(title=title)
@@ -262,12 +262,12 @@ def view(request, title=None, rev=0):
                     try:
                         revision = Revision.objects.get(page=page.id, rev=rev)
                     except ObjectDoesNotExist:
-                        return render(request, 'base.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title, 'project_name': LocalSettings.project_name, 'function': 'view'}, status=404)
+                        return render(request, 'base.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title, 'function': 'view'}, status=404)
             
                 soup = BeautifulSoup(NamuMarkParser(revision.text, title).parse(), 'html.parser')
-                return render(request, 'wiki.html', {'parse': soup.prettify(), 'title': title, 'project_name': LocalSettings.project_name, 'function': 'view', 'categories': categories})
+                return render(request, 'wiki.html', {'parse': soup.prettify(), 'title': title, 'function': 'view', 'categories': categories})
             else:
-                return render(request, 'wiki.html', {'error': '해당 페이지에 리비전이 존재하지 않습니다.', 'title': title, 'project_name': LocalSettings.project_name, 'function': 'view', 'categories': categories}, status=404)
+                return render(request, 'wiki.html', {'error': '해당 페이지에 리비전이 존재하지 않습니다.', 'title': title, 'function': 'view', 'categories': categories}, status=404)
                 
             
         if rev == 0:
@@ -276,10 +276,10 @@ def view(request, title=None, rev=0):
             try:
                 revision = Revision.objects.get(page=page.id, rev=rev)
             except ObjectDoesNotExist:
-                return render(request, 'base.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title, 'project_name': LocalSettings.project_name, 'function': 'view'}, status=404)
+                return render(request, 'base.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title, 'function': 'view'}, status=404)
                 
         soup = BeautifulSoup(NamuMarkParser(revision.text, title).parse(), 'html.parser')
-        return render(request, 'wiki.html', {'parse': soup.prettify(), 'title': title, 'project_name': LocalSettings.project_name, 'function': 'view'})
+        return render(request, 'wiki.html', {'parse': soup.prettify(), 'title': title, 'function': 'view'})
         
 def raw(request, title=None, rev=0):
     if request.method == 'GET':
@@ -310,33 +310,33 @@ def diff(request, title=None):
         try:
             page_id = Page.objects.get(title=title).id
         except ObjectDoesNotExist:
-            return render(request, 'base.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title, 'project_name': LocalSettings.project_name}, status=404)
+            return render(request, 'base.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
             
         if not 'rev' in request.GET or not 'oldrev' in request.GET:
-            return render(request, 'base.html', {'error': '비교하려는 리비전이 제시되지 않았습니다.', 'title': title, 'project_name': LocalSettings.project_name}, status=412)
+            return render(request, 'base.html', {'error': '비교하려는 리비전이 제시되지 않았습니다.', 'title': title}, status=412)
             
         rev = request.GET['rev']
         oldrev = request.GET['oldrev']
         
         if rev == oldrev:
-            return render(request, 'base.html', {'error': '비교하려는 리비전이 같습니다.', 'title': title, 'project_name': LocalSettings.project_name}, status=412)
+            return render(request, 'base.html', {'error': '비교하려는 리비전이 같습니다.', 'title': title}, status=412)
             
         try:
             text = Revision.objects.get(page=page_id, rev=rev).text
         except ObjectDoesNotExist:
-            return render(request, 'base.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title, 'project_name': LocalSettings.project_name}, status=404)
+            return render(request, 'base.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title}, status=404)
             
         try:
             oldtext = Revision.objects.get(page=page_id, rev=oldrev).text
         except ObjectDoesNotExist:
-            return render(request, 'base.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title, 'project_name': LocalSettings.project_name}, status=404)
+            return render(request, 'base.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title}, status=404)
             
         if text == oldtext:
-            return render(request, 'diff.html', {'diff': '동일합니다.', 'title': title, 'project_name': LocalSettings.project_name})
+            return render(request, 'diff.html', {'diff': '동일합니다.', 'title': title})
             
         diff = difflib.HtmlDiff().make_table(oldtext.splitlines(True), text.splitlines(True),  context=True).replace(' nowrap="nowrap"', '')
         
-        return render(request, 'diff.html', {'diff': diff, 'title': title, 'project_name': LocalSettings.project_name})
+        return render(request, 'diff.html', {'diff': diff, 'title': title})
         
 def history(request, title=None):
     if request.method == 'GET':
@@ -346,7 +346,7 @@ def history(request, title=None):
         try:
             page_id = Page.objects.get(title=title).id
         except ObjectDoesNotExist:
-            return render(request, 'base.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title, 'project_name': LocalSettings.project_name, 'function': 'history'}, status=404)
+            return render(request, 'base.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title, 'function': 'history'}, status=404)
             
         paginator = Paginator(Revision.objects.filter(page=page_id).order_by('-id').all(), 20)
         
@@ -360,7 +360,7 @@ def history(request, title=None):
         except EmptyPage:
             historys = paginator.page(paginator.num_pages)
             
-        return render(request, 'history.html', {'historys': historys, 'title': title, 'project_name': LocalSettings.project_name, 'page': int(page), 'num_pages': paginator.num_pages, 'function': 'history'})
+        return render(request, 'history.html', {'historys': historys, 'title': title, 'page': int(page), 'num_pages': paginator.num_pages, 'function': 'history'})
         
 def revert(request, title=None):
     if request.method == 'GET':
@@ -368,22 +368,22 @@ def revert(request, title=None):
             return redirect('/')
             
         if not 'rev' in request.GET:
-            return render(request, 'base.html', {'error': '되돌리려는 리비전이 제시되지 않았습니다.', 'title': title, 'project_name': LocalSettings.project_name}, status=412)
+            return render(request, 'base.html', {'error': '되돌리려는 리비전이 제시되지 않았습니다.', 'title': title}, status=412)
             
         rev = request.GET['rev']
         
         try:
             page_id = Page.objects.get(title=title).id
         except ObjectDoesNotExist:
-            return render(request, 'base.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title, 'project_name': LocalSettings.project_name, 'function': 'history'}, status=404)
+            return render(request, 'base.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
             
         try:
             text = Revision.objects.get(page=page_id, rev=rev).text
         except ObjectDoesNotExist:
-            return render(request, 'base.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title, 'project_name': LocalSettings.project_name}, status=404)
+            return render(request, 'base.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title}, status=404)
             
             
-        return render(request, 'revert.html', {'title': title, 'rev': rev, 'text': text, 'project_name': LocalSettings.project_name})
+        return render(request, 'revert.html', {'title': title, 'rev': rev, 'text': text})
             
         
     elif request.method == 'POST':
@@ -391,19 +391,19 @@ def revert(request, title=None):
             return redirect('/')
             
         if not 'rev' in request.POST:
-            return render(request, 'base.html', {'error': '되돌리려는 리비전이 제시되지 않았습니다.', 'title': title, 'project_name': LocalSettings.project_name}, status=412)
+            return render(request, 'base.html', {'error': '되돌리려는 리비전이 제시되지 않았습니다.', 'title': title}, status=412)
             
         rev = request.POST['rev']
         
         try:
             page = Page.objects.get(title=title)
         except ObjectDoesNotExist:
-            return render(request, 'base.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title, 'project_name': LocalSettings.project_name, 'function': 'history'}, status=404)
+            return render(request, 'base.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title, 'function': 'history'}, status=404)
             
         try:
             revert_revision = Revision.objects.get(page=page.id, rev=rev)
         except ObjectDoesNotExist:
-            return render(request, 'base.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title, 'project_name': LocalSettings.project_name}, status=404)
+            return render(request, 'base.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title}, status=404)
             
         pro_revision = Revision.objects.filter(page=page.id).order_by('-id').first()
         new_rev = pro_revision.rev + 1

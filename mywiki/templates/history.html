@@ -1,28 +1,74 @@
 {% extends "base.html" %}
-
+{% block head %}
+        <title>{{title}} - {{PROJECT_NAME}}</title>
+{% endblock head %}
 {% block content %}
-    <div class="wiki-content">
-        <p><button id="diffbtn" class="btn btn-primary">선택 리비전 비교</button></p>
-        <div class="btn-group" role="group">
-            <a class="btn btn-primary btn-sm {% if page == 1 %}disabled{% endif %}" {% if page != 1 %}href="?page={{ page|add:"-1" }}"{% endif %}>
-                <span class="icon ion-chevron-left"></span>Past
-            </a>
-            <a class="btn btn-primary btn-sm {% if num_pages == page %}disabled{% endif %}" {% if num_pages != page %}href="?page={{ page|add:"1" }}"{% endif %}>
-                <span class="icon ion-chevron-right"></span>Next
-            </a>
+
+    <div class="container">
+        <div class="row">
+            <!--Sidebar-->
+            <div class="col-lg-3 wow fadeIn" data-wow-delay="0.2s">
+
+                <div class="widget-wrapper">
+                    <div class="list-group">
+                        <a href="/w/{{title|urlencode}}" class="list-group-item {% if function == 'view' %}active{% endif %}">문서</a>
+                        <a href="/edit/{{title|urlencode}}" class="list-group-item {% if function == 'edit' %}active{% endif %}">편집</a>
+                        <a href="/rename/{{title|urlencode}}" class="list-group-item {% if function == 'rename' %}active{% endif %}">이동</a>
+                        <a href="/history/{{title|urlencode}}" class="list-group-item {% if function == 'history' %}active{% endif %}">역사</a>
+                        <a href="/backlink/{{title|urlencode}}" class="list-group-item {% if function == 'backlink' %}active{% endif %}">역링크</a>
+                        <a href="/delete/{{title|urlencode}}" class="list-group-item {% if function == 'delete' %}active{% endif %}">삭제</a>
+                        <a href="/discuss/{{title|urlencode}}" class="list-group-item {% if function == 'discuss' %}active{% endif %}">토론</a>
+                    </div>
+                </div>
+                
+            </div>
+            <!--/.Sidebar-->
+            
+            <!--Main column-->
+            <div class="col-lg-8">
+
+                <!--First row-->
+                <div class="row wow fadeIn" data-wow-delay="0.4s">
+                    <div class="col-lg-12">
+                        <div class="divider-new">
+                            <h2 class="h2-responsive" id="title">{{title}}</h2>
+                        </div>
+                        {% if error %}
+                            <div class="alert alert-danger">
+                                <strong>오류!</strong>
+                                {{ error }}
+                            </div>
+                        {% endif %}
+                        <div class="wiki-content">
+                            <p><button id="diffbtn" class="btn btn-primary">선택 리비전 비교</button></p>
+                            <div class="btn-group" role="group">
+                                <a class="btn btn-primary btn-sm {% if page == 1 %}disabled{% endif %}" {% if page != 1 %}href="?page={{ page|add:"-1" }}"{% endif %}>
+                                    <span class="icon ion-chevron-left"></span>Past
+                                </a>
+                                <a class="btn btn-primary btn-sm {% if num_pages == page %}disabled{% endif %}" {% if num_pages != page %}href="?page={{ page|add:"1" }}"{% endif %}>
+                                    <span class="icon ion-chevron-right"></span>Next
+                                </a>
+                            </div>
+                            <ul class="wiki-list">
+                                {% for history in historys %}
+                                    <li>
+                                        <time datetime="{{ history.createDate }}" data-format="Y-m-d H:i:s">{{ history.createDate }}</time>
+                                        <span style="font-size: 8pt;">(<a href="/w/{{title|urlencode}}?rev={{ history.rev }}">보기</a> | <a href="/raw/{{title|urlencode}}?rev={{ history.rev }}">RAW</a> | <a rel="nofollow" href="/revert/{{title|urlencode}}?rev={{ history.rev }}">이 리비전으로 되돌리기</a>{% if history.rev > 1 %} | <a href="/diff/{{title|urlencode}}?rev={{ history.rev }}&oldrev={{ history.rev|add:'-1' }}">비교</a>{% endif %})</span>
+                                        <input name="oldrev" value="{{ history.rev }}" type="radio">
+                                        <input name="rev" value="{{ history.rev }}" type="radio">
+                                        <strong>r{{ history.rev }}</strong>
+                                        ({% if history.increase > 0 %}<span style="color: green;">+{{history.increase}}</span>{% elif history.increase < 0 %}<span style="color: red;">{{history.increase}}</span>{% else %}<span style="color: gray;">0</span>{% endif %})
+                                        (<span style="color: gray">{{ history.comment }}</span>)
+                                    </li>
+                                {% endfor %}
+                            </ul>
+                        </div>
+
+                </div>
+                <!--/.First row-->
+                
+                
         </div>
-        <ul class="wiki-list">
-            {% for history in historys %}
-                <li>
-                    <time datetime="{{ history.createDate }}" data-format="Y-m-d H:i:s">{{ history.createDate }}</time>
-                    <span style="font-size: 8pt;">(<a href="/w/{{title|urlencode}}?rev={{ history.rev }}">보기</a> | <a href="/raw/{{title|urlencode}}?rev={{ history.rev }}">RAW</a> | <a rel="nofollow" href="/revert/{{title|urlencode}}?rev={{ history.rev }}">이 리비전으로 되돌리기</a>{% if history.rev > 1 %} | <a href="/diff/{{title|urlencode}}?rev={{ history.rev }}&oldrev={{ history.rev|add:'-1' }}">비교</a>{% endif %})</span>
-                    <input name="oldrev" value="{{ history.rev }}" type="radio">
-                    <input name="rev" value="{{ history.rev }}" type="radio">
-                    <strong>r{{ history.rev }}</strong>
-                    ({% if history.increase > 0 %}<span style="color: green;">+{{history.increase}}</span>{% elif history.increase < 0 %}<span style="color: red;">{{history.increase}}</span>{% else %}<span style="color: gray;">0</span>{% endif %})
-                    (<span style="color: gray">{{ history.comment }}</span>)
-                </li>
-            {% endfor %}
-        </ul>
     </div>
+
 {% endblock content %}

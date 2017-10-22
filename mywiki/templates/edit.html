@@ -1,15 +1,63 @@
 {% extends "base.html" %}
 
+{% block head %}
+        <title>{{title}} - {{PROJECT_NAME}}</title>
+{% endblock head %}
+
 {% block content %}
-    <div>
-        <div>{{preview|safe}}</div>
-        <form action="/edit/{{title}}/" method="post">
-            <textarea name="text" class="form-control">{{text}}</textarea>
-            {% csrf_token %}
-            <input type="text" name="comment" placeholder="요약">
-            <input type="hidden" name="section" value="{{section}}">
-            <input type="submit" class="btn btn-default" name="preview" value="미리보기">
-            <input type="submit" class="btn btn-default" name="save" value="저장">
-        </form>
+
+    <div class="container">
+        <div class="row">
+            <!--Sidebar-->
+            <div class="col-lg-3 wow fadeIn" data-wow-delay="0.2s">
+
+                <div class="widget-wrapper">
+                    <div class="list-group">
+                        <a href="/w/{{title|urlencode}}" class="list-group-item {% if function == 'view' %}active{% endif %}">문서</a>
+                        <a href="/edit/{{title|urlencode}}" class="list-group-item {% if function == 'edit' %}active{% endif %}">편집</a>
+                        <a href="/rename/{{title|urlencode}}" class="list-group-item {% if function == 'rename' %}active{% endif %}">이동</a>
+                        <a href="/history/{{title|urlencode}}" class="list-group-item {% if function == 'history' %}active{% endif %}">역사</a>
+                        <a href="/backlink/{{title|urlencode}}" class="list-group-item {% if function == 'backlink' %}active{% endif %}">역링크</a>
+                        <a href="/delete/{{title|urlencode}}" class="list-group-item {% if function == 'delete' %}active{% endif %}">삭제</a>
+                        <a href="/discuss/{{title|urlencode}}" class="list-group-item {% if function == 'discuss' %}active{% endif %}">토론</a>
+                    </div>
+                </div>
+                
+            </div>
+            <!--/.Sidebar-->
+            
+            <!--Main column-->
+            <div class="col-lg-8">
+
+                <!--First row-->
+                <div class="row wow fadeIn" data-wow-delay="0.4s">
+                    <div class="col-lg-12">
+                        <div class="divider-new">
+                            <h2 class="h2-responsive" id="title">{{title}}</h2>
+                        </div>
+                        {% if error %}
+                            <div class="alert alert-danger">
+                                <strong>오류!</strong>
+                                {{ error }}
+                            </div>
+                        {% endif %}
+                        <div>
+                            <div>{{preview|safe}}</div>
+                            <form action="/edit/{{title}}/" method="post">
+                                <textarea name="text" class="form-control">{{text}}</textarea>
+                                {% csrf_token %}
+                                <input type="text" name="comment" placeholder="요약">
+                                <input type="hidden" name="section" value="{{section}}">
+                                <input type="submit" class="btn btn-default" name="preview" value="미리보기">
+                                <input type="submit" class="btn btn-default" name="save" value="저장">
+                            </form>
+                        </div>
+
+                </div>
+                <!--/.First row-->
+                
+                
+        </div>
     </div>
+
 {% endblock content %}
