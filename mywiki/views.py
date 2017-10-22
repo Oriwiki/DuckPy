@@ -30,7 +30,7 @@ def edit(request, title=None, section=0):
         try:
             page = Page.objects.get(title=title)
         except ObjectDoesNotExist:
-            return render(request, LocalSettings.default_skin + '/edit.html', {'title': title, 'text': "", 'preview': "", 'section': 0, 'function': 'edit'})
+            return render(request, LocalSettings.default_skin + '/edit.html', {'title': title, 'text': "", 'preview': "", 'section': 0})
         else:
             if page.is_created == True:
                 text = Revision.objects.filter(page=page.id).order_by('-id').first().text
@@ -44,7 +44,7 @@ def edit(request, title=None, section=0):
             except IndexError:
                 section = 0
         
-        return render(request, LocalSettings.default_skin + '/edit.html', {'title': title, 'text': text, 'preview': "", 'section': section, 'function': 'edit'})
+        return render(request, LocalSettings.default_skin + '/edit.html', {'title': title, 'text': text, 'preview': "", 'section': section})
         
     elif request.method == 'POST':
         # 미리보기
@@ -136,7 +136,7 @@ def view(request, title=None, rev=0):
             page = Page.objects.get(title=title)
         except ObjectDoesNotExist:
             if request.path.startswith('/w/'):
-                return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title, 'function': 'view'}, status=404)
+                return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
             else:
                 Page(title=title, namespace=5, is_created=True).save()
                 page = Page.objects.get(title=title)
@@ -264,12 +264,12 @@ def view(request, title=None, rev=0):
                     try:
                         revision = Revision.objects.get(page=page.id, rev=rev)
                     except ObjectDoesNotExist:
-                        return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title, 'function': 'view'}, status=404)
+                        return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title}, status=404)
             
                 soup = BeautifulSoup(NamuMarkParser(revision.text, title).parse(), 'html.parser')
-                return render(request, LocalSettings.default_skin + '/wiki.html', {'parse': soup.prettify(), 'title': title, 'function': 'view', 'categories': categories})
+                return render(request, LocalSettings.default_skin + '/wiki.html', {'parse': soup.prettify(), 'title': title, 'categories': categories})
             else:
-                return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 페이지에 리비전이 존재하지 않습니다.', 'title': title, 'function': 'view', 'categories': categories}, status=404)
+                return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 페이지에 리비전이 존재하지 않습니다.', 'title': title, 'categories': categories}, status=404)
                 
             
         if rev == 0:
@@ -278,10 +278,10 @@ def view(request, title=None, rev=0):
             try:
                 revision = Revision.objects.get(page=page.id, rev=rev)
             except ObjectDoesNotExist:
-                return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title, 'function': 'view'}, status=404)
+                return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title}, status=404)
                 
         soup = BeautifulSoup(NamuMarkParser(revision.text, title).parse(), 'html.parser')
-        return render(request, LocalSettings.default_skin + '/wiki.html', {'parse': soup.prettify(), 'title': title, 'function': 'view'})
+        return render(request, LocalSettings.default_skin + '/wiki.html', {'parse': soup.prettify(), 'title': title})
         
 def raw(request, title=None, rev=0):
     if request.method == 'GET':
@@ -348,7 +348,7 @@ def history(request, title=None):
         try:
             page_id = Page.objects.get(title=title).id
         except ObjectDoesNotExist:
-            return render(request, LocalSettings.default_skin + '/history.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title, 'function': 'history'}, status=404)
+            return render(request, LocalSettings.default_skin + '/history.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
             
         paginator = Paginator(Revision.objects.filter(page=page_id).order_by('-id').all(), 20)
         
@@ -362,7 +362,7 @@ def history(request, title=None):
         except EmptyPage:
             historys = paginator.page(paginator.num_pages)
             
-        return render(request, LocalSettings.default_skin + '/history.html', {'historys': historys, 'title': title, 'page': int(page), 'num_pages': paginator.num_pages, 'function': 'history'})
+        return render(request, LocalSettings.default_skin + '/history.html', {'historys': historys, 'title': title, 'page': int(page), 'num_pages': paginator.num_pages})
         
 def revert(request, title=None):
     if request.method == 'GET':
@@ -400,7 +400,7 @@ def revert(request, title=None):
         try:
             page = Page.objects.get(title=title)
         except ObjectDoesNotExist:
-            return render(request, LocalSettings.default_skin + '/revert.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title, 'function': 'history'}, status=404)
+            return render(request, LocalSettings.default_skin + '/revert.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
             
         try:
             revert_revision = Revision.objects.get(page=page.id, rev=rev)
