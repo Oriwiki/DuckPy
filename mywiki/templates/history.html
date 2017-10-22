@@ -15,10 +15,11 @@
             {% for history in historys %}
                 <li>
                     <time datetime="{{ history.createDate }}" data-format="Y-m-d H:i:s">{{ history.createDate }}</time>
-                    <span style="font-size: 8pt;">(<a href="/w/{{ urlencode }}?rev={{ history.rev }}">보기</a> | <a href="/raw/{{ urlencode }}?rev={{ history.rev }}">RAW</a> | <a rel="nofollow" href="/revert/{{ urlencode }}?rev={{ history.rev }}">이 리비전으로 되돌리기</a> | <a href="/diff/{{ urlencode }}?rev={{ history.rev }}&oldrev={{ history.rev|add:"-1" }}">비교</a>)</span>
+                    <span style="font-size: 8pt;">(<a href="/w/{{ urlencode }}?rev={{ history.rev }}">보기</a> | <a href="/raw/{{ urlencode }}?rev={{ history.rev }}">RAW</a> | <a rel="nofollow" href="/revert/{{ urlencode }}?rev={{ history.rev }}">이 리비전으로 되돌리기</a>{% if history.rev > 1 %} | <a href="/diff/{{ urlencode }}?rev={{ history.rev }}&oldrev={{ history.rev|add:'-1' }}">비교</a>{% endif %})</span>
                     <input name="oldrev" value="{{ history.rev }}" type="radio">
                     <input name="rev" value="{{ history.rev }}" type="radio">
                     <strong>r{{ history.rev }}</strong>
+                    ({% if history.increase > 0 %}<span style="color: green;">+{{history.increase}}</span>{% elif history.increase < 0 %}<span style="color: red;">{{history.increase}}</span>{% else %}<span style="color: gray;">0</span>{% endif %})
                     (<span style="color: gray">{{ history.comment }}</span>)
                 </li>
             {% endfor %}

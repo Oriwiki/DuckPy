@@ -64,40 +64,47 @@ def edit(request, title=None, section=0):
         else:
             namespace = 0
         
+        text = request.POST['text']
+        section = int(request.POST['section'])
+
         try:
             Page(title=title, namespace=namespace, is_created=True).save()
         except IntegrityError:
             page = Page.objects.get(title=title)
             if page.is_created == True:
                 pro_revision = Revision.objects.filter(page=page.id).order_by('-id').first()
+                
+                if section > 0:
+                    parser = NamuMarkParser(pro_revision.text, title)
+                    toc = parser.get_toc()
+                    text = parser.toc_before
+                    for idx, each_toc in enumerate(toc):
+                        text += '=' * each_toc[2]
+                        text += each_toc[1]
+                        text += '=' * each_toc[2]
+                        text += '\n'
+                        if idx == section - 1:
+                            text += request.POST['text'] + '\n'
+                        else:
+                            try:
+                                text += each_toc[3]
+                            except IndexError:
+                                pass
+                
+                
                 rev = pro_revision.rev + 1
+                increase = len(text) - len(pro_revision.text)
             else:
                 rev = 1
+                increase = len(text)
                 page.is_created = True
                 page.save()
         else:
             page = Page.objects.get(title=title)
             rev = 1
+            increase = len(text)
             
-        text = request.POST['text']
-        section = int(request.POST['section'])
-        if section > 0:
-            parser = NamuMarkParser(pro_revision.text, title)
-            toc = parser.get_toc()
-            text = parser.toc_before
-            for idx, each_toc in enumerate(toc):
-                text += '=' * each_toc[2]
-                text += each_toc[1]
-                text += '=' * each_toc[2]
-                text += '\n'
-                if idx == section - 1:
-                    text += request.POST['text'] + '\n'
-                else:
-                    try:
-                        text += each_toc[3]
-                    except IndexError:
-                        pass
-        Revision(text=text, page=page, comment=request.POST['comment'], rev=rev).save()
+        Revision(text=text, page=page, comment=request.POST['comment'], rev=rev, increase=increase).save()
         
         # 분류
         now_category = set(NamuMarkParser(text, title).get_category())
@@ -131,7 +138,7 @@ def view(request, title=None, rev=0):
             else:
                 Page(title=title, namespace=5, is_created=True).save()
                 page = Page.objects.get(title=title)
-                Revision(text='Hello, World!', page=page, comment='This is testing revision.', rev=1).save()
+                Revision(text='Hello, World!', page=page, comment='This is testing revision.', rev=1, increase=len('Hello, World!')).save()
               
         if 'rev' in request.GET:
             rev = request.GET['rev']        
@@ -398,9 +405,11 @@ def revert(request, title=None):
         except ObjectDoesNotExist:
             return render(request, 'base.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title, 'urlencode': quote(title), 'project_name': LocalSettings.project_name}, status=404)
             
-        new_rev = Revision.objects.filter(page=page.id).order_by('-id').first().rev + 1
+        pro_revision = Revision.objects.filter(page=page.id).order_by('-id').first()
+        new_rev = pro_revision.rev + 1
+        increase = len(revert_revision.text) - len(pro_revision.text)
             
-        Revision(text=revert_revision.text, page=page, comment='r' + str(revert_revision.rev) + '으로 되돌림: ' + request.POST['comment'], rev=new_rev).save()
+        Revision(text=revert_revision.text, page=page, comment='r' + str(revert_revision.rev) + '으로 되돌림: ' + request.POST['comment'], rev=new_rev, increase=increase).save()
         
         return redirect('/w/' + title)
         
