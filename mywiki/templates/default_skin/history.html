@@ -1,4 +1,5 @@
 {% extends "default_skin/base.html" %}
+{% load model %}
 {% block head %}
         <title>{{title}} - {{PROJECT_NAME}}</title>
 {% endblock head %}
@@ -42,6 +43,12 @@
                                         <input name="rev" value="{{ history.rev }}" type="radio">
                                         <strong>r{{ history.rev }}</strong>
                                         ({% if history.increase > 0 %}<span style="color: green;">+{{history.increase}}</span>{% elif history.increase < 0 %}<span style="color: red;">{{history.increase}}</span>{% else %}<span style="color: gray;">0</span>{% endif %})
+                                        {% if history.user_id %}
+                                            {{ history.user_id|get_model:"User"|get_attribute:"username" }}
+                                        {% endif %}
+                                        {% if history.ip_id %}
+                                            {{ history.ip_id|get_model:"Ip"|get_attribute:"ip" }}
+                                        {% endif %}
                                         (<span style="color: gray">{{ history.comment }}</span>)
                                     </li>
                                 {% endfor %}

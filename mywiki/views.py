@@ -16,6 +16,8 @@ import re
 from random import choice
 from django.views.generic.edit import CreateView
 from django.contrib.auth.forms import UserCreationForm
+from django.contrib.auth.models import User
+from ipware.ip import get_ip
 
 # Create your views here.
 
@@ -65,7 +67,20 @@ def edit(request, title=None, section=0):
             namespace = 6
         else:
             namespace = 0
-        
+            
+        # 사용자
+        if request.user.is_active:
+            user = User.objects.get(username=request.user.username)
+            ip = None
+        else:
+            user = None
+            ip_address = get_ip(request)
+            try:
+                ip = Ip.objects.get(ip=ip_address)
+            except ObjectDoesNotExist:
+                Ip(ip=ip_address).save()
+                ip = Ip.objects.get(ip=ip_address)
+                
         text = request.POST['text']
         section = int(request.POST['section'])
 
@@ -106,7 +121,7 @@ def edit(request, title=None, section=0):
             rev = 1
             increase = len(text)
             
-        Revision(text=text, page=page, comment=request.POST['comment'], rev=rev, increase=increase).save()
+        Revision(text=text, page=page, comment=request.POST['comment'], rev=rev, increase=increase, user=user, ip=ip).save()
         
         # 분류
         now_category = set(NamuMarkParser(text, title).get_category())
