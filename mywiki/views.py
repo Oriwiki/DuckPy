@@ -76,6 +76,7 @@ def edit(request, title=None, section=0):
                 pro_revision = Revision.objects.filter(page=page.id).order_by('-id').first()
                 pro_parser = NamuMarkParser(pro_revision.text, title)
                 
+                # 단락 편집
                 if section > 0:
                     toc = pro_parser.get_toc()
                     text = pro_parser.toc_before
@@ -109,38 +110,8 @@ def edit(request, title=None, section=0):
         
         now_parser = NamuMarkParser(text, title)
         
-        # 분류
-        now_category = set(now_parser.get_category())
-        if rev > 1:
-            pro_category = set(pro_parser.get_category())
-            for each_category in pro_category - now_category:
-                each_category_page = Page.objects.get(title=each_category)
-                each_category_page.category = each_category_page.category.replace(str(page.id) + ',', '')
-                each_category_page.save()
-            
-            for each_category in now_category - pro_category:
-                __save_category(each_category, page.id)
-        else:
-            for each_category in now_category:
-                __save_category(each_category, page.id)
-                
-                
-        # 역링크
-        now_links = set(now_parser.get_link())
-        if rev > 1:
-            pro_links = set(pro_parser.get_link())
-            for each_link in pro_links - now_links:
-                each_link_page = Page.objects.get(title=each_link)
-                each_link_page.backlink = each_link_page.backlink.replace(str(page.id) + ',', '')
-                each_link_page.save()
-                
-            for each_link in now_links - pro_links:
-                __save_backlink(each_link, page.id)
-        else:
-            for each_link in now_links:
-                __save_backlink(each_link, page.id)
+        __insert(now_parser, pro_parser, page.id, rev)
         
-                
         return HttpResponseRedirect(reverse('view', kwargs={'title': title}) + '?alert=successEdit')
         
 def view(request, title=None, rev=0):
@@ -451,6 +422,11 @@ def revert(request, title=None):
             
         Revision(text=revert_revision.text, page=page, comment='r' + str(revert_revision.rev) + '으로 되돌림: ' + request.POST['comment'], rev=new_rev, increase=increase, user=editor['user'], ip=editor['ip']).save()
         
+        revert_parser = NamuMarkParser(revert_revision.text, title)
+        pro_parser = NamuMarkParser(pro_revision.text, title)
+        
+        __insert(revert_parser, pro_parser, page.id, new_rev)
+        
         return HttpResponseRedirect(reverse('view', kwargs={'title': title}) + '?alert=successRevert')
 
         
@@ -553,6 +529,38 @@ def __get_namespace(title):
         namespace = 0
         
     return namespace
+    
+def __insert(now_parser, pro_parser, page_id, rev):
+    # 분류
+    now_category = set(now_parser.get_category())
+    if rev > 1:
+        pro_category = set(pro_parser.get_category())
+        for each_category in pro_category - now_category:
+            each_category_page = Page.objects.get(title=each_category)
+            each_category_page.category = each_category_page.category.replace(str(page_id) + ',', '')
+            each_category_page.save()
+        
+        for each_category in now_category - pro_category:
+            __save_category(each_category, page_id)
+    else:
+        for each_category in now_category:
+            __save_category(each_category, page_id)
+            
+    # 역링크
+    now_links = set(now_parser.get_link())
+    if rev > 1:
+        pro_links = set(pro_parser.get_link())
+        for each_link in pro_links - now_links:
+            each_link_page = Page.objects.get(title=each_link)
+            each_link_page.backlink = each_link_page.backlink.replace(str(page_id) + ',', '')
+            each_link_page.save()
+            
+        for each_link in now_links - pro_links:
+            __save_backlink(each_link, page_id)
+    else:
+        for each_link in now_links:
+            __save_backlink(each_link, page_id)
+
 
         
 class signup(CreateView):
