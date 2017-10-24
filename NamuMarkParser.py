@@ -74,6 +74,35 @@ class NamuMarkParser:
         self.__text_paragraph(self.input)
         return self.toc
         
+    def get_link(self):
+        if not '[[' in self.input:
+            return []
+            
+        text = ""
+        for line in self.input.splitlines(True):
+            text += self.__text_curly_bracket(line)
+            
+        link = []
+        
+        greet = QuotedString('[[',  endQuoteChar="]]")
+        for i in greet.searchString(text):
+            for n in i:
+            
+                n_split = n.split("|", 1)
+                
+                if n.startswith("http://"):
+                    continue
+                elif n.startswith("#"):
+                    continue
+                elif n.startswith('분류:'):
+                    continue
+                elif n.startswith(':분류:'):
+                    continue
+                    
+                link.append(n_split[0])
+                    
+        return link
+        
     def __parse_defs_multiline(self, input):
         text = ""
         # singleline

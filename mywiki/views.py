@@ -56,28 +56,17 @@ def edit(request, title=None, section=0):
             return render(request, LocalSettings.default_skin + '/edit.html', {'title': title,'text': request.POST['text'], 'preview': soup.prettify(), 'section': request.POST['section']})
     
         # 저장
-        if title.startswith('DuckPy:'):
-            namespace = 1
-        elif title.startswith('파일:'):
-            namespace = 3
-        elif title.startswith('분류:'):
-            namespace = 4
-        elif title.startswith(LocalSettings.project_name + ':'):
-            namespace = 5
-        elif title.startswith('틀:'):
-            namespace = 6
-        elif title.startswith('사용자:'):
+        
+        namespace = __get_namespace(title)
+        
+        if namespace == 2:
             if not request.user.is_active or request.user.username != re.sub('\.(css|js)$', '', title[4:]):
                 return render(request, LocalSettings.default_skin + '/edit.html', {'title': title,'text': request.POST['text'], 'section': request.POST['section'], 'error': '사용자 문서는 본인만 편집 가능합니다.'})
-        
-            namespace = 2
-            
-        else:
-            namespace = 0
-            
+                
         # 사용자
         editor = __get_user(request)
         
+        text = request.POST['text']
         
         try:
             Page(title=title, namespace=namespace, is_created=True).save()
@@ -85,11 +74,11 @@ def edit(request, title=None, section=0):
             page = Page.objects.get(title=title)
             if page.is_created == True:
                 pro_revision = Revision.objects.filter(page=page.id).order_by('-id').first()
+                pro_parser = NamuMarkParser(pro_revision.text, title)
                 
                 if section > 0:
-                    parser = NamuMarkParser(pro_revision.text, title)
-                    toc = parser.get_toc()
-                    text = parser.toc_before
+                    toc = pro_parser.get_toc()
+                    text = pro_parser.toc_before
                     for idx, each_toc in enumerate(toc):
                         text += '=' * each_toc[2]
                         text += each_toc[1]
@@ -102,8 +91,6 @@ def edit(request, title=None, section=0):
                                 text += each_toc[3]
                             except IndexError:
                                 pass
-                else:
-                    text = request.POST['text']
                 
                 
                 rev = pro_revision.rev + 1
@@ -120,10 +107,12 @@ def edit(request, title=None, section=0):
             
         Revision(text=text, page=page, comment=request.POST['comment'], rev=rev, increase=increase, user=editor['user'], ip=editor['ip']).save()
         
+        now_parser = NamuMarkParser(text, title)
+        
         # 분류
-        now_category = set(NamuMarkParser(text, title).get_category())
+        now_category = set(now_parser.get_category())
         if rev > 1:
-            pro_category = set(NamuMarkParser(pro_revision.text, title).get_category())
+            pro_category = set(pro_parser.get_category())
             for each_category in pro_category - now_category:
                 each_category_page = Page.objects.get(title=each_category)
                 each_category_page.category = each_category_page.category.replace(str(page.id) + ',', '')
@@ -134,6 +123,23 @@ def edit(request, title=None, section=0):
         else:
             for each_category in now_category:
                 __save_category(each_category, page.id)
+                
+                
+        # 역링크
+        now_links = set(now_parser.get_link())
+        if rev > 1:
+            pro_links = set(pro_parser.get_link())
+            for each_link in pro_links - now_links:
+                each_link_page = Page.objects.get(title=each_link)
+                each_link_page.backlink = each_link_page.backlink.replace(str(page.id) + ',', '')
+                each_link_page.save()
+                
+            for each_link in now_links - pro_links:
+                __save_backlink(each_link, page.id)
+        else:
+            for each_link in now_links:
+                __save_backlink(each_link, page.id)
+        
                 
         return HttpResponseRedirect(reverse('view', kwargs={'title': title}) + '?alert=successEdit')
         
@@ -147,12 +153,14 @@ def view(request, title=None, rev=0):
         try:
             page = Page.objects.get(title=title)
         except ObjectDoesNotExist:
-            if request.path.startswith('/w/'):
+            if Page.objects.all().count() > 0:
                 return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
             else:
                 Page(title=title, namespace=5, is_created=True).save()
                 page = Page.objects.get(title=title)
                 Revision(text='Hello, World!', page=page, comment='This is testing revision.', rev=1, increase=len('Hello, World!')).save()
+                
+        
               
         if 'rev' in request.GET:
             rev = request.GET['rev']
@@ -282,8 +290,11 @@ def view(request, title=None, rev=0):
                 return render(request, LocalSettings.default_skin + '/wiki.html', {'parse': soup.prettify(), 'title': title, 'categories': categories})
             else:
                 return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 페이지에 리비전이 존재하지 않습니다.', 'title': title, 'categories': categories}, status=404)
-                
-            
+        
+        
+        if page.is_created == False:
+            return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
+
         if rev == 0:
             revision = Revision.objects.filter(page=page.id).order_by('-id').first()
         else:
@@ -469,24 +480,12 @@ def rename(request, title=None):
         
         editor = __get_user(request)
         
-        if title.startswith('DuckPy:'):
-            namespace = 1
-        elif title.startswith('파일:'):
-            namespace = 3
-        elif title.startswith('분류:'):
-            namespace = 4
-        elif title.startswith(LocalSettings.project_name + ':'):
-            namespace = 5
-        elif title.startswith('틀:'):
-            namespace = 6
-        elif title.startswith('사용자:'):
+        namespace = __get_namespace(title)
+        
+        if namespace == 2:
             if not request.user.is_active or request.user.username != re.sub('\.(css|js)$', '', title[4:]):
                 return render(request, LocalSettings.default_skin + '/edit.html', {'title': title,'text': request.POST['text'], 'section': request.POST['section'], 'error': '사용자 문서는 본인만 편집 가능합니다.'})
         
-            namespace = 2
-        else:
-            namespace = 0
-            
         page.title = request.POST['changedTitle']
         page.namespace = namespace
         page.save()
@@ -509,6 +508,19 @@ def __save_category(each_category, page_id):
             each_category_page.category += str(page_id) + ','
         each_category_page.save()
         
+def __save_backlink(each_link, page_id):
+    try:
+        each_link_page = Page.objects.get(title=each_link)
+    except ObjectDoesNotExist:
+        namespace = __get_namespace(each_link)
+        Page(title=each_link, namespace=namespace, backlink=str(page_id) + ',', is_created=False).save()
+    else:
+        if each_link_page.backlink == None:
+            each_link_page.backlink = str(page_id) + ','
+        else:
+            each_link_page.backlink += str(page_id) + ','
+        each_link_page.save()
+        
 def __get_user(request):
     if request.user.is_active:
         user = User.objects.get(username=request.user.username)
@@ -523,6 +535,24 @@ def __get_user(request):
             ip = Ip.objects.get(ip=ip_address)
             
     return {'user': user, 'ip': ip}
+    
+def __get_namespace(title):
+    if title.startswith('DuckPy:'):
+        namespace = 1
+    elif title.startswith('파일:'):
+        namespace = 3
+    elif title.startswith('분류:'):
+        namespace = 4
+    elif title.startswith(LocalSettings.project_name + ':'):
+        namespace = 5
+    elif title.startswith('틀:'):
+        namespace = 6
+    elif title.startswith('사용자:'):
+        namespace = 2
+    else:
+        namespace = 0
+        
+    return namespace
 
         
 class signup(CreateView):
