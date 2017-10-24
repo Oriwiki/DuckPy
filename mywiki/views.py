@@ -1,6 +1,6 @@
 from django.shortcuts import render
 from django.shortcuts import redirect
-from django.http import HttpResponse, HttpResponseNotFound
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect
 from NamuMarkParser import NamuMarkParser
 from bs4 import BeautifulSoup
 from .models import *
@@ -18,6 +18,7 @@ from django.views.generic.edit import CreateView
 from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from ipware.ip import get_ip
+from django.core.urlresolvers import reverse
 
 # Create your views here.
 
@@ -75,7 +76,7 @@ def edit(request, title=None, section=0):
             namespace = 0
             
         # 사용자
-        editor = __save_category(request)
+        editor = __get_user(request)
         
         
         try:
@@ -101,6 +102,8 @@ def edit(request, title=None, section=0):
                                 text += each_toc[3]
                             except IndexError:
                                 pass
+                else:
+                    text = request.POST['text']
                 
                 
                 rev = pro_revision.rev + 1
@@ -132,7 +135,7 @@ def edit(request, title=None, section=0):
             for each_category in now_category:
                 __save_category(each_category, page.id)
                 
-        return redirect('/w/' + title + '?alert=successEdit')
+        return HttpResponseRedirect(reverse('view', kwargs={'title': title}) + '?alert=successEdit')
         
 def view(request, title=None, rev=0):
     if request.method == 'GET':
@@ -292,9 +295,9 @@ def view(request, title=None, rev=0):
         if revision.text.startswith(('#redirect ', '#넘겨주기 ')):
             if ('redirect' in request.GET and int(request.GET['redirect']) == 1) or not 'redirect' in request.GET:
                 if revision.text.startswith('#redirect '):
-                    return redirect('/w/' + quote(revision.text[10:]) + '?redirectFrom=' + quote(title))
+                    return HttpResponseRedirect(reverse('view', kwargs={'title': revision.text[10:]}) + '?redirectFrom=' + quote(title))
                 else:
-                    return redirect('/w/' + quote(revision.text[6:]) + '?redirectFrom=' + quote(title))
+                    return HttpResponseRedirect(reverse('view', kwargs={'title': revision.text[6:]}) + '?redirectFrom=' + quote(title))
                 
         soup = BeautifulSoup(NamuMarkParser(revision.text, title).parse(), 'html.parser')
         return render(request, LocalSettings.default_skin + '/wiki.html', {'parse': soup.prettify(), 'title': title})
@@ -437,12 +440,13 @@ def revert(request, title=None):
             
         Revision(text=revert_revision.text, page=page, comment='r' + str(revert_revision.rev) + '으로 되돌림: ' + request.POST['comment'], rev=new_rev, increase=increase, user=editor['user'], ip=editor['ip']).save()
         
-        return redirect('/w/' + title)
+        return HttpResponseRedirect(reverse('view', kwargs={'title': title}) + '?alert=successRevert')
+
         
 def random(request):
     my_ids = Page.objects.filter(is_deleted=False, is_created=True, namespace=0).values_list('id', flat=True)
     rand_ids = choice(list(my_ids))
-    return redirect('/w/' + Page.objects.get(id=rand_ids).title)
+    return redirect('view', title=Page.objects.get(id=rand_ids).title)
     
 def rename(request, title=None):
     if request.method == 'GET':
@@ -490,7 +494,7 @@ def rename(request, title=None):
             
         Revision(text=pro_revision.text, page=page, comment= request.POST['changedTitle'] + '으로 이동: ' + request.POST['comment'], rev=pro_revision.rev + 1, increase=0, user=editor['user'], ip=editor['ip']).save()
         
-        return redirect('/w/' + title)
+        return HttpResponseRedirect(reverse('view', kwargs={'title': title}) + '?alert=successRename')
         
             
 def __save_category(each_category, page_id):
