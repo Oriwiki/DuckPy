@@ -455,7 +455,7 @@ def revert(request, title=None):
         return redirect('/w/' + title)
         
 def random(request):
-    my_ids = Page.objects.filter(is_deleted=False, is_created=True).values_list('id', flat=True)
+    my_ids = Page.objects.filter(is_deleted=False, is_created=True, namespace=0).values_list('id', flat=True)
     rand_ids = choice(list(my_ids))
     return redirect('/w/' + Page.objects.get(id=rand_ids).title)
         
