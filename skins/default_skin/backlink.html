@@ -1,0 +1,58 @@
+{% extends "default_skin/base.html" %}
+{% load model %}
+{% block head %}
+        <title>{{title}} - {{PROJECT_NAME}}</title>
+{% endblock head %}
+{% block content %}
+
+            <!--Sidebar-->
+                {% include "default_skin/sidebar.html" with function="backlink" %}
+            <!--/.Sidebar-->
+            
+            <!--Main column-->
+            <div class="col-lg-8">
+
+                <!--First row-->
+                <div class="row wow fadeIn" data-wow-delay="0.4s">
+                    <div class="col-lg-12">
+                        <div class="divider-new">
+                            <h2 class="h2-responsive" id="title">{{title}}</h2>
+                        </div>
+                        {% if error %}
+                            <div class="alert alert-danger">
+                                <strong>오류!</strong>
+                                {{ error }}
+                            </div>
+                        {% else %}
+                            <div class="wiki-content">
+                                <div class="btn-group" role="group">
+                                    <a class="btn btn-primary btn-sm {% if page == 1 %}disabled{% endif %}" {% if page != 1 %}href="?page={{ page|add:"-1" }}"{% endif %}>
+                                        <span class="icon ion-chevron-left"></span>Past
+                                    </a>
+                                    <a class="btn btn-primary btn-sm {% if num_pages == page %}disabled{% endif %}" {% if num_pages != page %}href="?page={{ page|add:"1" }}"{% endif %}>
+                                        <span class="icon ion-chevron-right"></span>Next
+                                    </a>
+                                </div>
+                                {% if backlinks %}
+                                    <div class="wiki-category-container">
+                                    {% for initial, backlink in backlinks.items %}
+                                        <div>
+                                            <h3 class="wiki-heading">{{initial}}</h3>
+                                            <ul>
+                                            {% for each_backlink in backlink %}
+                                                <li><a href="{% url 'view' title=each_backlink %}">{{each_backlink}}</a></li>
+                                            {% endfor %}
+                                            </ul>
+                                        </div>
+                                    {% endfor %}
+                                    </div>
+                                {% endif %}
+                            </div>
+                        {% endif %}
+
+                </div>
+                <!--/.First row-->
+                
+                
+
+{% endblock content %}

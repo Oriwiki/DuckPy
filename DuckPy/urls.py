@@ -40,6 +40,8 @@ urlpatterns = [
     url(r'^random/$', wiki_views.random, name='random'),
     url(r'^rename/$', wiki_views.random),
     url(r'^rename/(?P<title>.*)/$', wiki_views.rename, name='rename'),
+    url(r'^backlink/$', wiki_views.random),
+    url(r'^backlink/(?P<title>.*)/$', wiki_views.backlink, name='backlink'),
     
     # 회원 url
     url(r'^login/$', auth_views.login, name='login', kwargs={'template_name': LocalSettings.default_skin + '/login.html'}),

@@ -23,37 +23,38 @@
                                 <strong>오류!</strong>
                                 {{ error }}
                             </div>
-                        {% endif %}
-                        <div class="wiki-content">
-                            <p><button id="diffbtn" class="btn btn-primary">선택 리비전 비교</button></p>
-                            <div class="btn-group" role="group">
-                                <a class="btn btn-primary btn-sm {% if page == 1 %}disabled{% endif %}" {% if page != 1 %}href="?page={{ page|add:"-1" }}"{% endif %}>
-                                    <span class="icon ion-chevron-left"></span>Past
-                                </a>
-                                <a class="btn btn-primary btn-sm {% if num_pages == page %}disabled{% endif %}" {% if num_pages != page %}href="?page={{ page|add:"1" }}"{% endif %}>
-                                    <span class="icon ion-chevron-right"></span>Next
-                                </a>
+                        {% else %}
+                            <div class="wiki-content">
+                                <p><button id="diffbtn" class="btn btn-primary">선택 리비전 비교</button></p>
+                                <div class="btn-group" role="group">
+                                    <a class="btn btn-primary btn-sm {% if page == 1 %}disabled{% endif %}" {% if page != 1 %}href="?page={{ page|add:"-1" }}"{% endif %}>
+                                        <span class="icon ion-chevron-left"></span>Past
+                                    </a>
+                                    <a class="btn btn-primary btn-sm {% if num_pages == page %}disabled{% endif %}" {% if num_pages != page %}href="?page={{ page|add:"1" }}"{% endif %}>
+                                        <span class="icon ion-chevron-right"></span>Next
+                                    </a>
+                                </div>
+                                <ul class="wiki-list">
+                                    {% for history in historys %}
+                                        <li>
+                                            <time datetime="{{ history.createDate }}" data-format="Y-m-d H:i:s">{{ history.createDate }}</time>
+                                            <span style="font-size: 8pt;">(<a href="/w/{{title|urlencode}}?rev={{ history.rev }}">보기</a> | <a href="/raw/{{title|urlencode}}?rev={{ history.rev }}">RAW</a> | <a rel="nofollow" href="/revert/{{title|urlencode}}?rev={{ history.rev }}">이 리비전으로 되돌리기</a>{% if history.rev > 1 %} | <a href="/diff/{{title|urlencode}}?rev={{ history.rev }}&oldrev={{ history.rev|add:'-1' }}">비교</a>{% endif %})</span>
+                                            <input name="oldrev" value="{{ history.rev }}" type="radio">
+                                            <input name="rev" value="{{ history.rev }}" type="radio">
+                                            <strong>r{{ history.rev }}</strong>
+                                            ({% if history.increase > 0 %}<span style="color: green;">+{{history.increase}}</span>{% elif history.increase < 0 %}<span style="color: red;">{{history.increase}}</span>{% else %}<span style="color: gray;">0</span>{% endif %})
+                                            {% if history.user_id %}
+                                                {{ history.user_id|get_model:"User"|get_attribute:"username" }}
+                                            {% endif %}
+                                            {% if history.ip_id %}
+                                                {{ history.ip_id|get_model:"Ip"|get_attribute:"ip" }}
+                                            {% endif %}
+                                            (<span style="color: gray">{{ history.comment }}</span>)
+                                        </li>
+                                    {% endfor %}
+                                </ul>
                             </div>
-                            <ul class="wiki-list">
-                                {% for history in historys %}
-                                    <li>
-                                        <time datetime="{{ history.createDate }}" data-format="Y-m-d H:i:s">{{ history.createDate }}</time>
-                                        <span style="font-size: 8pt;">(<a href="/w/{{title|urlencode}}?rev={{ history.rev }}">보기</a> | <a href="/raw/{{title|urlencode}}?rev={{ history.rev }}">RAW</a> | <a rel="nofollow" href="/revert/{{title|urlencode}}?rev={{ history.rev }}">이 리비전으로 되돌리기</a>{% if history.rev > 1 %} | <a href="/diff/{{title|urlencode}}?rev={{ history.rev }}&oldrev={{ history.rev|add:'-1' }}">비교</a>{% endif %})</span>
-                                        <input name="oldrev" value="{{ history.rev }}" type="radio">
-                                        <input name="rev" value="{{ history.rev }}" type="radio">
-                                        <strong>r{{ history.rev }}</strong>
-                                        ({% if history.increase > 0 %}<span style="color: green;">+{{history.increase}}</span>{% elif history.increase < 0 %}<span style="color: red;">{{history.increase}}</span>{% else %}<span style="color: gray;">0</span>{% endif %})
-                                        {% if history.user_id %}
-                                            {{ history.user_id|get_model:"User"|get_attribute:"username" }}
-                                        {% endif %}
-                                        {% if history.ip_id %}
-                                            {{ history.ip_id|get_model:"Ip"|get_attribute:"ip" }}
-                                        {% endif %}
-                                        (<span style="color: gray">{{ history.comment }}</span>)
-                                    </li>
-                                {% endfor %}
-                            </ul>
-                        </div>
+                        {% endif %}
 
                 </div>
                 <!--/.First row-->

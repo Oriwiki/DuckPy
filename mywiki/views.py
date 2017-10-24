@@ -99,10 +99,12 @@ def edit(request, title=None, section=0):
             else:
                 rev = 1
                 increase = len(text)
+                pro_parser = None
                 page.is_created = True
                 page.save()
         else:
             page = Page.objects.get(title=title)
+            pro_parser = None
             rev = 1
             increase = len(text)
             
@@ -471,6 +473,64 @@ def rename(request, title=None):
         
         return HttpResponseRedirect(reverse('view', kwargs={'title': title}) + '?alert=successRename')
         
+def backlink(request, title=None):
+    if request.method == 'GET':
+        if title == None:
+            return redirect('/')
+            
+        try:
+            page = Page.objects.get(title=title)
+        except ObjectDoesNotExist:
+            return render(request, LocalSettings.default_skin + '/backlink.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
+        
+        if page.backlink == None or page.backlink == "":
+            return render(request, LocalSettings.default_skin + '/backlink.html', {'error': '역링크가 존재하지 않습니다.', 'title': title})
+            
+        backlinks = list(filter(None, page.backlink.split(',')))
+        
+        paginator = Paginator(backlinks, 20)
+        
+        if not 'page' in request.GET:
+            page_i = 1
+        else:
+            page_i = request.GET.get('page')
+            
+        try:
+            backlink_ids = paginator.page(page_i)
+        except EmptyPage:
+            backlink_ids = paginator.page(paginator.num_pages)
+            
+        backlink_titles = []
+        for backlink_id in backlink_ids:
+            backlink_titles.append(Page.objects.get(pk=backlink_id).title)
+        backlink_titles.sort(key=str.lower)
+        
+        backlinks = OrderedDict()
+        BASE_CODE, CHOSUNG = 44032, 588
+        CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
+        for backlinked_title in backlink_titles:
+            if backlinked_title.lower().startswith(tuple(string.ascii_lowercase)):
+                try:
+                    backlinks[backlinked_title[0].upper()].append(backlinked_title)
+                except KeyError:
+                    backlinks[backlinked_title[0].upper()] = []
+                    backlinks[backlinked_title[0].upper()].append(backlinked_title)
+            elif re.match('[ㄱ-ㅎㅏ-ㅣ가-힣]', backlinked_title[0]):
+                char_code = ord(backlinked_title[0]) - BASE_CODE
+                char1 = int(char_code / CHOSUNG)
+                try:
+                    backlinks[CHOSUNG_LIST[char1]].append(backlinked_title)
+                except KeyError:
+                    backlinks[CHOSUNG_LIST[char1]] = []
+                    backlinks[CHOSUNG_LIST[char1]].append(backlinked_title)
+            else:
+                try:
+                    backlinks['etc'].append(backlinked_title)
+                except KeyError:
+                    backlinks['etc'] = []
+                    backlinks['etc'].append(backlinked_title)
+                
+        return render(request, LocalSettings.default_skin + '/backlink.html', {'backlinks': backlinks, 'title': title, 'page': int(page_i), 'num_pages': paginator.num_pages})
             
 def __save_category(each_category, page_id):
     try:
