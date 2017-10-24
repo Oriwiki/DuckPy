@@ -484,6 +484,7 @@ def rename(request, title=None):
             namespace = 0
             
         page.title = request.POST['changedTitle']
+        page.namespace = namespace
         page.save()
 
             
