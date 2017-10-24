@@ -24,7 +24,7 @@
                             </div>
                         {% endif %}
                             <div>
-                                <form action="/revert/{{title}}/" method="post">
+                                <form action="{% url 'revert' title=title %}" method="post">
                                     <textarea name="text" class="form-control" disabled>{{text}}</textarea>
                                     {% csrf_token %}
                                     <input type="text" name="comment" placeholder="요약">
