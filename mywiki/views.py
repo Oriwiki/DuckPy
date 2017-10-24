@@ -75,21 +75,9 @@ def edit(request, title=None, section=0):
             namespace = 0
             
         # 사용자
-        if request.user.is_active:
-            user = User.objects.get(username=request.user.username)
-            ip = None
-        else:
-            user = None
-            ip_address = get_ip(request)
-            try:
-                ip = Ip.objects.get(ip=ip_address)
-            except ObjectDoesNotExist:
-                Ip(ip=ip_address).save()
-                ip = Ip.objects.get(ip=ip_address)
-                
-        text = request.POST['text']
-        section = int(request.POST['section'])
-
+        editor = __save_category(request)
+        
+        
         try:
             Page(title=title, namespace=namespace, is_created=True).save()
         except IntegrityError:
@@ -127,7 +115,7 @@ def edit(request, title=None, section=0):
             rev = 1
             increase = len(text)
             
-        Revision(text=text, page=page, comment=request.POST['comment'], rev=rev, increase=increase, user=user, ip=ip).save()
+        Revision(text=text, page=page, comment=request.POST['comment'], rev=rev, increase=increase, user=editor['user'], ip=editor['ip']).save()
         
         # 분류
         now_category = set(NamuMarkParser(text, title).get_category())
@@ -440,24 +428,14 @@ def revert(request, title=None):
         increase = len(revert_revision.text) - len(pro_revision.text)
         
         # 사용자
-        if request.user.is_active:
-            user = User.objects.get(username=request.user.username)
-            ip = None
-        else:
-            user = None
-            ip_address = get_ip(request)
-            try:
-                ip = Ip.objects.get(ip=ip_address)
-            except ObjectDoesNotExist:
-                Ip(ip=ip_address).save()
-                ip = Ip.objects.get(ip=ip_address)
+        editor = __get_user(request)
                 
         if page.namespace == 2:
             if not request.user.is_active or request.user.username != re.sub('\.(css|js)$', '', title[4:]):
                 return render(request, LocalSettings.default_skin + '/revert.html', {'title': title,'text': revert_revision.text, 'rev': rev, 'error': '사용자 문서는 본인만 편집 가능합니다.'})
                 
             
-        Revision(text=revert_revision.text, page=page, comment='r' + str(revert_revision.rev) + '으로 되돌림: ' + request.POST['comment'], rev=new_rev, increase=increase, user=user, ip=ip).save()
+        Revision(text=revert_revision.text, page=page, comment='r' + str(revert_revision.rev) + '으로 되돌림: ' + request.POST['comment'], rev=new_rev, increase=increase, user=editor['user'], ip=editor['ip']).save()
         
         return redirect('/w/' + title)
         
@@ -465,8 +443,55 @@ def random(request):
     my_ids = Page.objects.filter(is_deleted=False, is_created=True, namespace=0).values_list('id', flat=True)
     rand_ids = choice(list(my_ids))
     return redirect('/w/' + Page.objects.get(id=rand_ids).title)
+    
+def rename(request, title=None):
+    if request.method == 'GET':
+        if title == None:
+            return redirect('/')
+            
+        return render(request, LocalSettings.default_skin + '/rename.html', {'title': title})
+        
+    elif request.method == 'POST':
+        if title == None:
+            return redirect('/')
+            
+        try:
+            page = Page.objects.get(title=title)
+        except ObjectDoesNotExist:
+            return render(request, LocalSettings.default_skin + '/rename.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
+            
+        pro_revision = Revision.objects.filter(page=page.id).order_by('-id').first()
         
         
+        editor = __get_user(request)
+        
+        if title.startswith('DuckPy:'):
+            namespace = 1
+        elif title.startswith('파일:'):
+            namespace = 3
+        elif title.startswith('분류:'):
+            namespace = 4
+        elif title.startswith(LocalSettings.project_name + ':'):
+            namespace = 5
+        elif title.startswith('틀:'):
+            namespace = 6
+        elif title.startswith('사용자:'):
+            if not request.user.is_active or request.user.username != re.sub('\.(css|js)$', '', title[4:]):
+                return render(request, LocalSettings.default_skin + '/edit.html', {'title': title,'text': request.POST['text'], 'section': request.POST['section'], 'error': '사용자 문서는 본인만 편집 가능합니다.'})
+        
+            namespace = 2
+        else:
+            namespace = 0
+            
+        page.title = request.POST['changedTitle']
+        page.save()
+
+            
+        Revision(text=pro_revision.text, page=page, comment= request.POST['changedTitle'] + '으로 이동: ' + request.POST['comment'], rev=pro_revision.rev + 1, increase=0, user=editor['user'], ip=editor['ip']).save()
+        
+        return redirect('/w/' + title)
+        
+            
 def __save_category(each_category, page_id):
     try:
         each_category_page = Page.objects.get(title=each_category)
@@ -478,6 +503,21 @@ def __save_category(each_category, page_id):
         else:
             each_category_page.category += str(page_id) + ','
         each_category_page.save()
+        
+def __get_user(request):
+    if request.user.is_active:
+        user = User.objects.get(username=request.user.username)
+        ip = None
+    else:
+        user = None
+        ip_address = get_ip(request)
+        try:
+            ip = Ip.objects.get(ip=ip_address)
+        except ObjectDoesNotExist:
+            Ip(ip=ip_address).save()
+            ip = Ip.objects.get(ip=ip_address)
+            
+    return {'user': user, 'ip': ip}
 
         
 class signup(CreateView):

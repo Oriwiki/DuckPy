@@ -15,30 +15,36 @@ Including another URLconf
 """
 from django.conf.urls import include, url
 from django.contrib import admin
-from mywiki import views
+from mywiki import views as wiki_views
 from django.conf import settings
 from django.contrib.auth import views as auth_views
 import LocalSettings
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
-    url(r'^$', views.view),
-    url(r'^edit/$', views.edit),
-    url(r'^edit/(?P<title>.*)/$', views.edit),
-    url(r'^w/$', views.view),
-    url(r'^w/(?P<title>.*)/$', views.view),
-    url(r'^raw/$', views.raw),
-    url(r'^raw/(?P<title>.*)/$', views.raw),
-    url(r'^diff/$', views.diff),
-    url(r'^diff/(?P<title>.*)/$', views.diff),
-    url(r'^history/$', views.history),
-    url(r'^history/(?P<title>.*)/$', views.history),
-    url(r'^revert/$', views.revert),
-    url(r'^revert/(?P<title>.*)/$', views.revert),
-    url(r'^random/$', views.random),
+    
+    # 위키 url
+    url(r'^$', wiki_views.view),
+    url(r'^edit/$', wiki_views.edit),
+    url(r'^edit/(?P<title>.*)/$', wiki_views.edit, name='edit'),
+    url(r'^w/$', wiki_views.view),
+    url(r'^w/(?P<title>.*)/$', wiki_views.view, name='view'),
+    url(r'^raw/$', wiki_views.raw),
+    url(r'^raw/(?P<title>.*)/$', wiki_views.raw, name='raw'),
+    url(r'^diff/$', wiki_views.diff),
+    url(r'^diff/(?P<title>.*)/$', wiki_views.diff, name='diff'),
+    url(r'^history/$', wiki_views.history),
+    url(r'^history/(?P<title>.*)/$', wiki_views.history, name='history'),
+    url(r'^revert/$', wiki_views.revert),
+    url(r'^revert/(?P<title>.*)/$', wiki_views.revert, name='revert'),
+    url(r'^random/$', wiki_views.random, name='random'),
+    url(r'^rename/$', wiki_views.random),
+    url(r'^rename/(?P<title>.*)/$', wiki_views.rename, name='rename'),
+    
+    # 회원 url
     url(r'^login/$', auth_views.login, name='login', kwargs={'template_name': LocalSettings.default_skin + '/login.html'}),
     url(r'^logout/$', auth_views.logout, name='logout', kwargs={'next_page': '/?alert=successLogout'}),
-    url(r'^signup/$', views.signup.as_view(), name='signup'),
+    url(r'^signup/$', wiki_views.signup.as_view(), name='signup'),
 
 ]
 
