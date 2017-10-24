@@ -148,6 +148,12 @@
                     {% endif %}
                     </div>
                 {% endif %}
+                {% if request.GET.redirectFrom %}
+                    <div class="alert alert-info col-lg-12">
+                        <a class="document" href="/w/{{request.GET.redirectFrom}}?redirect=0" title="{{request.GET.redirectFrom}}">{{request.GET.redirectFrom}}</a>에서 넘어옴
+                    </div>
+                {% endif %}
+                
                 {% block content %}
                 {% endblock content %}
             </div>

@@ -8,7 +8,7 @@ from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
 import LocalSettings
 import difflib
-from urllib.parse   import quote
+from urllib.parse   import quote, unquote
 from django.core.paginator import Paginator, EmptyPage
 import string
 from collections import OrderedDict
@@ -164,8 +164,8 @@ def view(request, title=None, rev=0):
                 Revision(text='Hello, World!', page=page, comment='This is testing revision.', rev=1, increase=len('Hello, World!')).save()
               
         if 'rev' in request.GET:
-            rev = request.GET['rev']        
-              
+            rev = request.GET['rev']
+
         # 분류
         if page.namespace == 4:
             BASE_CODE, CHOSUNG = 44032, 588
@@ -300,6 +300,13 @@ def view(request, title=None, rev=0):
                 revision = Revision.objects.get(page=page.id, rev=rev)
             except ObjectDoesNotExist:
                 return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title}, status=404)
+                
+        if revision.text.startswith(('#redirect ', '#넘겨주기 ')):
+            if ('redirect' in request.GET and int(request.GET['redirect']) == 1) or not 'redirect' in request.GET:
+                if revision.text.startswith('#redirect '):
+                    return redirect('/w/' + quote(revision.text[10:]) + '?redirectFrom=' + quote(title))
+                else:
+                    return redirect('/w/' + quote(revision.text[6:]) + '?redirectFrom=' + quote(title))
                 
         soup = BeautifulSoup(NamuMarkParser(revision.text, title).parse(), 'html.parser')
         return render(request, LocalSettings.default_skin + '/wiki.html', {'parse': soup.prettify(), 'title': title})
