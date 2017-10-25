@@ -124,7 +124,7 @@ def view(request, title=None, rev=0):
             title = LocalSettings.project_name + ':' + LocalSettings.mainpage_title
             
         try:
-            page = Page.objects.get(title=title)
+            page = Page.objects.get(title=title, is_deleted=False)
         except ObjectDoesNotExist:
             if Page.objects.all().count() > 0:
                 return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
@@ -461,8 +461,7 @@ def rename(request, title=None):
         namespace = __get_namespace(title)
         
         if namespace == 2:
-            if not request.user.is_active or request.user.username != re.sub('\.(css|js)$', '', title[4:]):
-                return render(request, LocalSettings.default_skin + '/edit.html', {'title': title,'text': request.POST['text'], 'section': request.POST['section'], 'error': '사용자 문서는 본인만 편집 가능합니다.'})
+            return render(request, LocalSettings.default_skin + '/rename.html', {'title': title, 'error': '사용자 문서는 이동할 수 없습니다.'})
         
         page.title = request.POST['changedTitle']
         page.namespace = namespace
@@ -531,6 +530,39 @@ def backlink(request, title=None):
                     backlinks['etc'].append(backlinked_title)
                 
         return render(request, LocalSettings.default_skin + '/backlink.html', {'backlinks': backlinks, 'title': title, 'page': int(page_i), 'num_pages': paginator.num_pages})
+        
+def delete(request, title=None):
+    if request.method == 'GET':
+        if title == None:
+            return redirect('/')
+            
+        return render(request, LocalSettings.default_skin + '/delete.html', {'title': title})
+        
+    elif request.method == 'POST':
+        if title == None:
+            return redirect('/')
+            
+        try:
+            page = Page.objects.get(title=title)
+        except ObjectDoesNotExist:
+            return render(request, LocalSettings.default_skin + '/delete.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
+            
+        pro_revision = Revision.objects.filter(page=page.id).order_by('-id').first()
+        
+        
+        editor = __get_user(request)
+        
+        
+        if page.namespace == 2:
+            if not request.user.is_active or request.user.username != re.sub('\.(css|js)$', '', title[4:]):
+                return render(request, LocalSettings.default_skin + '/delete.html', {'title': title, 'error': '사용자 문서는 본인만 삭제 가능합니다.'})
+        
+        page.is_deleted = True
+        page.save()
+            
+        Revision(text="", page=page, comment='삭제: ' + request.POST['comment'], rev=pro_revision.rev + 1, increase=-len(pro_revision.text), user=editor['user'], ip=editor['ip']).save()
+        
+        return HttpResponseRedirect(reverse('view', kwargs={'title': title}) + '?alert=successDelete')
             
 def __save_category(each_category, page_id):
     try:
