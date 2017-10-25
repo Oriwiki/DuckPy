@@ -38,11 +38,11 @@ urlpatterns = [
     url(r'^revert/$', wiki_views.revert),
     url(r'^revert/(?P<title>.*)/$', wiki_views.revert, name='revert'),
     url(r'^random/$', wiki_views.random, name='random'),
-    url(r'^rename/$', wiki_views.random),
+    url(r'^rename/$', wiki_views.rename),
     url(r'^rename/(?P<title>.*)/$', wiki_views.rename, name='rename'),
-    url(r'^backlink/$', wiki_views.random),
+    url(r'^backlink/$', wiki_views.backlink),
     url(r'^backlink/(?P<title>.*)/$', wiki_views.backlink, name='backlink'),
-    url(r'^delete/$', wiki_views.random),
+    url(r'^delete/$', wiki_views.delete),
     url(r'^delete/(?P<title>.*)/$', wiki_views.delete, name='delete'),
     
     # 회원 url
