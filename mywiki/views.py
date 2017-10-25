@@ -144,111 +144,67 @@ def view(request, title=None, rev=0):
             CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
             categories = {'sub': {}, 'template': {}, 'page': {}, 'project': {}}
             
-            for categorized_page_id in page.category.split(','):
-                if categorized_page_id == '':
-                    continue
-                categorized_page = Page.objects.get(id=categorized_page_id)
+            if page.category == None or page.category == "":
+                return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '분류가 존재하지 않습니다.', 'title': title})
+                
+            categories = list(filter(None, page.category.split(',')))
+            
+            paginator = Paginator(categories, 20)
+            
+            if not 'page' in request.GET:
+                page_i = 1
+            else:
+                page_i = request.GET.get('page')
+                
+            try:
+                category_ids = paginator.page(page_i)
+            except EmptyPage:
+                category_ids = paginator.page(paginator.num_pages)
+                
+            category_titles = [ [], [], [], [], [], [], [] ]
+            for category_id in category_ids:
+                categorized_page = Page.objects.get(pk=category_id, is_created=True, is_deleted=False)
                 if categorized_page.namespace == 0:
-                    if categorized_page.title.lower().startswith(tuple(string.ascii_lowercase)):
-                        try:
-                            categories['page'][categorized_page.title[0].lower()].append(categorized_page.title)
-                        except KeyError:
-                            categories['page'][categorized_page.title[0].lower()] = []
-                            categories['page'][categorized_page.title[0].lower()].append(categorized_page.title)
-                        categories['page'][categorized_page.title[0].lower()].sort(key=str.lower)
-                    elif re.match('[ㄱ-ㅎㅏ-ㅣ가-힣]', categorized_page.title[0]):
-                        char_code = ord(categorized_page.title[0]) - BASE_CODE
-                        char1 = int(char_code / CHOSUNG)
-                        try:
-                            categories['page'][CHOSUNG_LIST[char1]].append(categorized_page.title)
-                        except KeyError:
-                            categories['page'][CHOSUNG_LIST[char1]] = []
-                            categories['page'][CHOSUNG_LIST[char1]].append(categorized_page.title)
-                        categories['page'][CHOSUNG_LIST[char1]].sort(key=str.lower)
-                    else:
-                        try:
-                            categories['page']['etc'].append(categorized_page.title)
-                        except KeyError:
-                            categories['page']['etc'] = []
-                            categories['page']['etc'].append(categorized_page.title)
-                        categories['page']['etc'].sort(key=str.lower)
-                elif categorized_page.namespace == 6:
-                    if categorized_page.title[2:].lower().startswith(tuple(string.ascii_lowercase)):
-                        try:
-                            categories['template'][categorized_page.title[2:][0].lower()].append(categorized_page.title[2:])
-                        except KeyError:
-                            categories['template'][categorized_page.title[2:][0].lower()] = []
-                            categories['template'][categorized_page.title[2:][0].lower()].append(categorized_page.title[2:])
-                        categories['template'][categorized_page.title[2:][0].lower()].sort(key=str.lower)
-                    elif re.match('[ㄱ-ㅎㅏ-ㅣ가-힣]', categorized_page.title[2:][0]):
-                        char_code = ord(categorized_page.title[2:][0]) - BASE_CODE
-                        char1 = int(char_code / CHOSUNG)
-                        try:
-                            categories['template'][CHOSUNG_LIST[char1]].append(categorized_page.title[2:])
-                        except KeyError:
-                            categories['template'][CHOSUNG_LIST[char1]] = []
-                            categories['template'][CHOSUNG_LIST[char1]].append(categorized_page.title[2:])
-                        categories['template'][CHOSUNG_LIST[char1]].sort(key=str.lower)
-                    else:
-                        try:
-                            categories['template']['etc'].append(categorized_page.title[2:])
-                        except KeyError:
-                            categories['template']['etc'] = []
-                            categories['template']['etc'].append(categorized_page.title[2:])
-                        categories['template']['etc'].sort(key=str.lower)
+                    category_titles[0].append(categorized_page.title)
+                elif categorized_page.namespace == 1:
+                    category_titles[1].append(categorized_page.title[7:])
+                elif categorized_page.namespace == 2:
+                    category_titles[2].append(categorized_page.title[4:])
+                elif categorized_page.namespace == 3:
+                    category_titles[3].append(categorized_page.title[3:])
                 elif categorized_page.namespace == 4:
-                    if categorized_page.title[3:].lower().startswith(tuple(string.ascii_lowercase)):
-                        try:
-                            categories['sub'][categorized_page.title[3:][0].lower()].append(categorized_page.title[3:])
-                        except KeyError:
-                            categories['sub'][categorized_page.title[3:][0].lower()] = []
-                            categories['sub'][categorized_page.title[3:][0].lower()].append(categorized_page.title[3:])
-                        categories['sub'][categorized_page.title[3:][0].lower()].sort(key=str.lower)
-                    elif re.match('[ㄱ-ㅎㅏ-ㅣ가-힣]', categorized_page.title[3:][0]):
-                        char_code = ord(categorized_page.title[3:][0]) - BASE_CODE
-                        char1 = int(char_code / CHOSUNG)
-                        try:
-                            categories['sub'][CHOSUNG_LIST[char1]].append(categorized_page.title[3:])
-                        except KeyError:
-                            categories['sub'][CHOSUNG_LIST[char1]] = []
-                            categories['sub'][CHOSUNG_LIST[char1]].append(categorized_page.title[3:])
-                        categories['sub'][CHOSUNG_LIST[char1]].sort(key=str.lower)
-                    else:
-                        try:
-                            categories['sub']['etc'].append(categorized_page.title[3:])
-                        except KeyError:
-                            categories['sub']['etc'] = []
-                            categories['sub']['etc'].append(categorized_page.title[3:])
-                        categories['sub']['etc'].sort(key=str.lower)
+                    category_titles[4].append(categorized_page.title[3:])
                 elif categorized_page.namespace == 5:
-                    if categorized_page.title[len(LocalSettings.project_name) + 1:].lower().startswith(tuple(string.ascii_lowercase)):
+                    category_titles[5].append(categorized_page.title[len(LocalSettings.project_name) + 1:])
+                elif categorized_page.namespace == 6:
+                    category_titles[6].append(categorized_page.title[2:])
+            
+            categories = [ OrderedDict(), OrderedDict(), OrderedDict(), OrderedDict(), OrderedDict(), OrderedDict(), OrderedDict() ]
+            BASE_CODE, CHOSUNG = 44032, 588
+            CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
+            for j in range(0,7):
+                category_titles[j].sort(key=str.lower)
+                
+                for categorized_title in category_titles[j]:
+                    if categorized_title.lower().startswith(tuple(string.ascii_lowercase)):
                         try:
-                            categories['project'][categorized_page.title[len(LocalSettings.project_name):][0].lower()].append(categorized_page.title[len(LocalSettings.project_name) + 1:])
+                            categories[j][categorized_title[0].upper()].append(categorized_title)
                         except KeyError:
-                            categories['project'][categorized_page.title[len(LocalSettings.project_name) + 1:][0].lower()] = []
-                            categories['project'][categorized_page.title[len(LocalSettings.project_name) + 1:][0].lower()].append(categorized_page.title[len(LocalSettings.project_name) + 1:])
-                        categories['project'][categorized_page.title[len(LocalSettings.project_name) + 1:][0].lower()].sort(key=str.lower)
-                    elif re.match('[ㄱ-ㅎㅏ-ㅣ가-힣]', categorized_page.title[len(LocalSettings.project_name) + 1:][0]):
-                        char_code = ord(categorized_page.title[len(LocalSettings.project_name) + 1:][0]) - BASE_CODE
+                            categories[j][categorized_title[0].upper()] = [categorized_title]
+                    elif re.match('[ㄱ-ㅎㅏ-ㅣ가-힣]', categorized_title[0]):
+                        char_code = ord(categorized_title[0]) - BASE_CODE
                         char1 = int(char_code / CHOSUNG)
                         try:
-                            categories['project'][CHOSUNG_LIST[char1]].append(categorized_page.title[len(LocalSettings.project_name) + 1:])
+                            categories[j][CHOSUNG_LIST[char1]].append(categorized_title)
                         except KeyError:
-                            categories['project'][CHOSUNG_LIST[char1]] = []
-                            categories['project'][CHOSUNG_LIST[char1]].append(categorized_page.title[len(LocalSettings.project_name) + 1:])
-                        categories['project'][CHOSUNG_LIST[char1]].sort(key=str.lower)
+                            categories[j][CHOSUNG_LIST[char1]] = [categorized_title]
                     else:
                         try:
-                            categories['project']['etc'].append(categorized_page.title[len(LocalSettings.project_name) + 1:])
+                            categories[j]['etc'].append(categorized_title)
                         except KeyError:
-                            categories['project']['etc'] = []
-                            categories['project']['etc'].append(categorized_page.title[len(LocalSettings.project_name) + 1:])
-                        categories['project']['etc'].sort(key=str.lower)
-                        
-            categories['page'] = OrderedDict(sorted(categories['page'].items()))
-            categories['template'] = OrderedDict(sorted(categories['template'].items()))
-            categories['sub'] = OrderedDict(sorted(categories['sub'].items()))
-            categories['project'] = OrderedDict(sorted(categories['project'].items()))
+                            categories[j]['etc'] = [categorized_title]
+                
+                
             
             if page.is_created == True:
                 if rev == 0:
@@ -260,10 +216,10 @@ def view(request, title=None, rev=0):
                         return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title}, status=404)
             
                 soup = BeautifulSoup(NamuMarkParser(revision.text, title).parse(), 'html.parser')
-                return render(request, LocalSettings.default_skin + '/wiki.html', {'parse': soup.prettify(), 'title': title, 'categories': categories})
+                return render(request, LocalSettings.default_skin + '/wiki.html', {'parse': soup.prettify(), 'title': title, 'categories': categories, 'page': int(page_i), 'num_pages': paginator.num_pages})
             else:
-                return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 페이지에 리비전이 존재하지 않습니다.', 'title': title, 'categories': categories}, status=404)
-        
+                return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '문서에 리비전이 존재하지 않습니다.', 'title': title, 'categories': categories, 'page': int(page_i), 'num_pages': paginator.num_pages}, status=404)
+            
         
         if page.is_created == False:
             return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
