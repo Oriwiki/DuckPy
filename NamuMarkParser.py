@@ -6,6 +6,7 @@ from datetime import datetime
 from collections import OrderedDict
 from mywiki.models import Page, Revision
 from django.core.exceptions import ObjectDoesNotExist
+from django.core.urlresolvers import reverse
 
 class NamuMarkParser:
     def __init__(self, input, title, category=True):
@@ -34,7 +35,7 @@ class NamuMarkParser:
                 text += self.__parse_defs_multiline(self.toc_before)
                 text += '</p>'
             for idx, each_toc in enumerate(self.toc):
-                text += '<h' + str(each_toc[2]) + ' class="wiki-heading"><a id="s-' + each_toc[0] + '" href="#toc">' + each_toc[0] + '.</a>' + each_toc[1] + '<span class="wiki-edit-section"><a href="/edit/' + quote(self.title) + '?section=' + str(idx + 1) + '" rel="nofollow">[편집]</a></span></h' + str(each_toc[2]) + '>'
+                text += '<h' + str(each_toc[2]) + ' class="wiki-heading"><a id="s-' + each_toc[0] + '" href="#toc">' + each_toc[0] + '.</a>' + each_toc[1] + '<span class="wiki-edit-section"><a href="' + reverse('edit', kwargs={'title': self.title}) + '?section=' + str(idx + 1) + '" rel="nofollow">[편집]</a></span></h' + str(each_toc[2]) + '>'
                 text += '<p>'
                 try:
                     text += self.__parse_defs_multiline(each_toc[3])
@@ -302,6 +303,8 @@ class NamuMarkParser:
                     continue
                 elif n.startswith(':분류:'):
                     category_link = True
+                elif '#' in n:
+                    anchor_link = True
                     
                 if len(n_split) == 1:
                     if ex_link == True:
@@ -315,13 +318,21 @@ class NamuMarkParser:
                             text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal not-exist" href="' + quote(n[1:]) + '" title="' + n[1:] + '">' + n[1:] + '</a>')
                         else:
                             text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal" href="' + quote(n[1:]) + '" title="' + n[1:] + '">' + n[1:] + '</a>')
+                    elif anchor_link == True:
+                        n_anchor = n.split('#')
+                        try:
+                            Page.objects.get(title=n_anchor[0], is_created=True, is_deleted=False)
+                        except ObjectDoesNotExist:
+                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal not-exist" href="' + reverse('view', kwargs={'title': n_anchor[0]}) + '#' + n_anchor[1] + '" title="' + n + '">' + n + '</a>')
+                        else:
+                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal" href="' + reverse('view', kwargs={'title': n_anchor[0]}) + '#' + n_anchor[1] + '" title="' + n + '">' + n + '</a>')
                     else:
                         try:
                             Page.objects.get(title=n, is_created=True, is_deleted=False)
                         except ObjectDoesNotExist:
-                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal not-exist" href="/w/' + quote(n, '#') + '" title="' + n + '">' + n + '</a>')
+                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal not-exist" href="' + reverse('view', kwargs={'title': n}) + '" title="' + n + '">' + n + '</a>')
                         else:
-                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal" href="/w/' + quote(n, '#') + '" title="' + n + '">' + n + '</a>')
+                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal" href="' + reverse('view', kwargs={'title': n}) + '" title="' + n + '">' + n + '</a>')
                 elif len(n_split) == 2:
                     if ex_link == True:
                         text = text.replace("[[" + n + "]]", '<a class="wiki-link-external" href="' + n_split[0] + '" target="_blank" rel="noopener" title="' + n_split[0] + '">' + n_split[1] + '</a>')
@@ -334,13 +345,21 @@ class NamuMarkParser:
                             text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal not-exist" href="' + quote(n_split[0][1:]) + '" title="' + n_split[0][1:] + '">' + n_split[1] + '</a>')
                         else:
                             text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal" href="' + quote(n_split[0][1:]) + '" title="' + n_split[0][1:] + '">' + n_split[1] + '</a>')
+                    elif anchor_link == True:
+                        n_anchor = n_split[0].split('#')
+                        try:
+                            Page.objects.get(title=n_anchor[0], is_created=True, is_deleted=False)
+                        except ObjectDoesNotExist:
+                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal not-exist" href="' + reverse('view', kwargs={'title': n_anchor[0]}) + '#' + n_anchor[1] + '" title="' + n + '">' + n_split[1] + '</a>')
+                        else:
+                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal" href="' + reverse('view', kwargs={'title': n_anchor[0]}) + '#' + n_anchor[1] + '" title="' + n + '">' + n_split[1] + '</a>')
                     else:
                         try:
                             Page.objects.get(title=n_split[0], is_created=True, is_deleted=False)
                         except ObjectDoesNotExist:
-                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal not-exist" href="/w/' + quote(n_split[0], '#') + '" title="' + n_split[0] + '">' + n_split[1] + '</a>')
+                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal not-exist" href="' + reverse('view', kwargs={'title': n_split[0]}) + '" title="' + n_split[0] + '">' + n_split[1] + '</a>')
                         else:
-                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal" href="/w/' + quote(n_split[0], '#') + '" title="' + n_split[0] + '">' + n_split[1] + '</a>')
+                            text = text.replace("[[" + n + "]]", '<a class="wiki-link-internal" href="' + reverse('view', kwargs={'title': n_split[0]}) + '" title="' + n_split[0] + '">' + n_split[1] + '</a>')
         return text
         
     def __text_anchor(self, text):
@@ -1195,7 +1214,7 @@ class NamuMarkParser:
             
         text = '<div class="wiki-category"><h2>분류</h2><ul>'
         for each_category in self.category:
-            text += '<li><a href="/w/' + quote('분류:' + each_category) + '">' + each_category + '</a></li>'
+            text += '<li><a href="' + reverse('view', kwargs={'title': '분류:' + each_category}) + '">' + each_category + '</a></li>'
         text += '</ul></div>'
         
         return text
