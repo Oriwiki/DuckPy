@@ -291,6 +291,7 @@ class NamuMarkParser:
                 ex_link = False
                 self_link = False
                 category_link = False
+                anchor_link = False
                 
                 if n.startswith("http://"):
                     ex_link = True
