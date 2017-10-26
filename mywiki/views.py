@@ -19,6 +19,7 @@ from django.contrib.auth.forms import UserCreationForm
 from django.contrib.auth.models import User
 from ipware.ip import get_ip
 from django.core.urlresolvers import reverse
+import ipaddress
 
 # Create your views here.
 
@@ -519,6 +520,45 @@ def delete(request, title=None):
         Revision(text="", page=page, comment='삭제: ' + request.POST['comment'], rev=pro_revision.rev + 1, increase=-len(pro_revision.text), user=editor['user'], ip=editor['ip']).save()
         
         return HttpResponseRedirect(reverse('view', kwargs={'title': title}) + '?alert=successDelete')
+        
+def contribution(request, editor=None):
+    if request.method == 'GET':
+        if editor == None:
+            return redirect('/')
+        
+        try:
+            ipaddress.ip_address(editor)
+        except ValueError:
+            # 회원
+            try:
+                editor_id = User.objects.get(username=editor).id
+            except ObjectDoesNotExist:
+                return render(request, LocalSettings.default_skin + '/contribution.html', {'editor': editor, 'error': '해당하는 사용자가 없습니다.'})
+            else:
+                contribution = Revision.objects.filter(user_id=editor_id).order_by('-id').all()
+        else:
+            # IP 사용자
+            try:
+                editor_id = Ip.objects.get(ip=editor).id
+            except ObjectDoesNotExist:
+                return render(request, LocalSettings.default_skin + '/contribution.html', {'editor': editor, 'error': '해당하는 사용자가 없습니다.'})
+            else:
+                contribution = Revision.objects.filter(ip_id=editor_id).order_by('-id').all()
+                
+        paginator = Paginator(contribution, 20)
+        
+        if not 'page' in request.GET:
+            page = 1
+        else:
+            page = request.GET.get('page')
+            
+        try:
+            contributions = paginator.page(page)
+        except EmptyPage:
+            contributions = paginator.page(paginator.num_pages)
+            
+        return render(request, LocalSettings.default_skin + '/contribution.html', {'contributions': contributions, 'editor': editor, 'page': int(page), 'num_pages': paginator.num_pages})
+            
             
 def __save_category(each_category, page_id):
     try:

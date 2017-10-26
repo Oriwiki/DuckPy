@@ -44,10 +44,14 @@
                                             <strong>r{{ history.rev }}</strong>
                                             ({% if history.increase > 0 %}<span style="color: green;">+{{history.increase}}</span>{% elif history.increase < 0 %}<span style="color: red;">{{history.increase}}</span>{% else %}<span style="color: gray;">0</span>{% endif %})
                                             {% if history.user_id %}
-                                                {{ history.user_id|get_model:"User"|get_attribute:"username" }}
+                                                {% with username=history.user_id|get_model:"User"|get_attribute:"username" %}
+                                                    <a href="{% url 'contribution' editor=username %}">{{ username }}</a>
+                                                {% endwith %}
                                             {% endif %}
                                             {% if history.ip_id %}
-                                                {{ history.ip_id|get_model:"Ip"|get_attribute:"ip" }}
+                                                {% with ip=history.ip_id|get_model:"Ip"|get_attribute:"ip" %}
+                                                    <a href="{% url 'contribution' editor=ip %}">{{ ip }}</a>
+                                                {% endwith %}
                                             {% endif %}
                                             (<span style="color: gray">{{ history.comment }}</span>)
                                         </li>

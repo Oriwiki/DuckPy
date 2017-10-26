@@ -44,6 +44,8 @@ urlpatterns = [
     url(r'^backlink/(?P<title>.*)/$', wiki_views.backlink, name='backlink'),
     url(r'^delete/$', wiki_views.delete),
     url(r'^delete/(?P<title>.*)/$', wiki_views.delete, name='delete'),
+    url(r'^contribution/$', wiki_views.contribution),
+    url(r'^contribution/(?P<editor>.*)/$', wiki_views.contribution, name='contribution'),
     
     # 회원 url
     url(r'^login/$', auth_views.login, name='login', kwargs={'template_name': LocalSettings.default_skin + '/login.html'}),

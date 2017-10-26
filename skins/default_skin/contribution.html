@@ -1,0 +1,54 @@
+{% extends "default_skin/base.html" %}
+{% load model %}
+{% block head %}
+        <title>"{{editor}}"의 기여 목록 - {{PROJECT_NAME}}</title>
+{% endblock head %}
+{% block content %}
+
+            
+            <!--Main column-->
+            <div class="col-lg-12">
+
+                <!--First row-->
+                <div class="row wow fadeIn" data-wow-delay="0.4s">
+                    <div class="col-lg-12">
+                        <div class="divider-new">
+                            <h2 class="h2-responsive" id="title">"{{editor}}"의 기여 목록</h2>
+                        </div>
+                        {% if error %}
+                            <div class="alert alert-danger">
+                                <strong>오류!</strong>
+                                {{ error }}
+                            </div>
+                        {% else %}
+                            <div class="wiki-content">
+                                <div class="btn-group" role="group">
+                                    <a class="btn btn-primary btn-sm {% if page == 1 %}disabled{% endif %}" {% if page != 1 %}href="?page={{ page|add:"-1" }}"{% endif %}>
+                                        <span class="icon ion-chevron-left"></span>Past
+                                    </a>
+                                    <a class="btn btn-primary btn-sm {% if num_pages == page %}disabled{% endif %}" {% if num_pages != page %}href="?page={{ page|add:"1" }}"{% endif %}>
+                                        <span class="icon ion-chevron-right"></span>Next
+                                    </a>
+                                </div>
+                                <ul class="wiki-list">
+                                    {% for contribution in contributions %}
+                                        <li>
+                                            <time datetime="{{ contribution.createDate }}" data-format="Y-m-d H:i:s">{{ contribution.createDate }}</time>
+                                            {% with title=contribution.page_id|get_model:"Page"|get_attribute:"title" %}
+                                                <a href="{% url 'view' title=title %}">{{ title }}</a>
+                                            {% endwith %}
+                                            <strong>r{{ contribution.rev }}</strong>
+                                            ({% if contribution.increase > 0 %}<span style="color: green;">+{{contribution.increase}}</span>{% elif contribution.increase < 0 %}<span style="color: red;">{{contribution.increase}}</span>{% else %}<span style="color: gray;">0</span>{% endif %})
+                                            (<span style="color: gray">{{ contribution.comment }}</span>)
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                </div>
+                <!--/.First row-->
+                
+                
+
+{% endblock content %}
