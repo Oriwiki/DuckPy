@@ -569,7 +569,7 @@ def page_not_found(request, exception):
                 return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '사용자 문서는 본인만 편집 가능합니다.', 'title': exception['title']})
             elif exception['type'] == "BacklinkNotFound":
                 return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '역링크가 존재하지 않습니다.', 'title': exception['title']})
-            elif exception['type'] == "BacklinkNotFound":
+            elif exception['type'] == "ContributionNotFound":
                 return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '기여가 존재하지 않습니다.', 'editor': exception['editor']})
         
 
