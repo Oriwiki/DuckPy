@@ -13,7 +13,7 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
-from django.conf.urls import include, url
+from django.conf.urls import include, url, handler404
 from django.contrib import admin
 from mywiki import views as wiki_views
 from django.conf import settings
@@ -22,40 +22,19 @@ import LocalSettings
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),
+    url(r'^', include('mywiki.urls')),
     
-    # 위키 url
-    url(r'^$', wiki_views.view),
-    url(r'^edit/$', wiki_views.edit),
-    url(r'^edit/(?P<title>.*)/$', wiki_views.edit, name='edit'),
-    url(r'^w/$', wiki_views.view),
-    url(r'^w/(?P<title>.*)/$', wiki_views.view, name='view'),
-    url(r'^raw/$', wiki_views.raw),
-    url(r'^raw/(?P<title>.*)/$', wiki_views.raw, name='raw'),
-    url(r'^diff/$', wiki_views.diff),
-    url(r'^diff/(?P<title>.*)/$', wiki_views.diff, name='diff'),
-    url(r'^history/$', wiki_views.history),
-    url(r'^history/(?P<title>.*)/$', wiki_views.history, name='history'),
-    url(r'^revert/$', wiki_views.revert),
-    url(r'^revert/(?P<title>.*)/$', wiki_views.revert, name='revert'),
-    url(r'^random/$', wiki_views.random, name='random'),
-    url(r'^rename/$', wiki_views.rename),
-    url(r'^rename/(?P<title>.*)/$', wiki_views.rename, name='rename'),
-    url(r'^backlink/$', wiki_views.backlink),
-    url(r'^backlink/(?P<title>.*)/$', wiki_views.backlink, name='backlink'),
-    url(r'^delete/$', wiki_views.delete),
-    url(r'^delete/(?P<title>.*)/$', wiki_views.delete, name='delete'),
-    url(r'^contribution/$', wiki_views.contribution),
-    url(r'^contribution/(?P<editor>.*)/$', wiki_views.contribution, name='contribution'),
-    
-    # 회원 url
+    # 회원
     url(r'^login/$', auth_views.login, name='login', kwargs={'template_name': LocalSettings.default_skin + '/login.html'}),
     url(r'^logout/$', auth_views.logout, name='logout', kwargs={'next_page': '/?alert=successLogout'}),
     url(r'^signup/$', wiki_views.signup.as_view(), name='signup'),
 
 ]
 
-if settings.DEBUG:
-    import debug_toolbar
-    urlpatterns = [
-        url(r'^__debug__/', include(debug_toolbar.urls)),
-    ] + urlpatterns
+handler404 = wiki_views.page_not_found
+
+# if settings.DEBUG:
+import debug_toolbar
+urlpatterns = [
+    url(r'^__debug__/', include(debug_toolbar.urls)),
+] + urlpatterns

@@ -1,0 +1,27 @@
+{% extends "default_skin/base.html" %}
+{% load model %}
+{% block head %}
+        <title>404 Page Not Found Error - {{PROJECT_NAME}}</title>
+{% endblock head %}
+{% block content %}
+
+            
+            <!--Main column-->
+            <div class="col-lg-12">
+
+                <!--First row-->
+                <div class="row wow fadeIn" data-wow-delay="0.4s">
+                    <div class="col-lg-12">
+                        <div class="divider-new">
+                            <h2 class="h2-responsive" id="title">404 Page Not Found Error</h2>
+                        </div>
+                        <div class="alert alert-danger">
+                            <strong>해당하는 페이지를 찾을 수 없습니다.</strong>
+                        </div>
+                    </div>
+                </div>
+                <!--/.First row-->
+            </div>
+                
+
+{% endblock content %}

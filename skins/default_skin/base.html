@@ -99,7 +99,7 @@
                             <a class="nav-link" href="/recentdiscuss">최근 토론</a>
                         </li>
                         <li class="nav-item">
-                            <a class="nav-link" href="/random">랜덤</a>
+                            <a class="nav-link" href="{% url 'random' %}">랜덤</a>
                         </li>
                         <li class="nav-item btn-group">
                             <a class="nav-link dropdown-toggle" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">특수 기능</a>
@@ -117,12 +117,12 @@
                                 <li class="nav-item btn-group">
                                     <a class="nav-link dropdown-toggle" id="navbarDropdownMenuLink" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">{{ user.username }}</a>
                                     <div class="dropdown-menu dropdown-primary" aria-labelledby="navbarDropdownMenuLink">
-                                        <a class="nav-link" href="/logout">로그아웃</a>
+                                        <a class="nav-link" href="{% url 'logout' %}">로그아웃</a>
                                     </div>
                                 </li>
                             {% else %}
                                 <li class="nav-item">
-                                    <a class="nav-link" href="/login">로그인</a>
+                                    <a class="nav-link" href="{% url 'login' %}">로그인</a>
                                 </li>
                             {% endif %}
                     </ul>
@@ -156,7 +156,7 @@
                 {% endif %}
                 {% if request.GET.redirectFrom %}
                     <div class="alert alert-info col-lg-12">
-                        <a class="document" href="/w/{{request.GET.redirectFrom|urlencode}}?redirect=0" title="{{request.GET.redirectFrom}}">{{request.GET.redirectFrom}}</a>에서 넘어옴
+                        <a class="document" href="{% url 'view' title=request.GET.redirectFrom %}?redirect=0" title="{{request.GET.redirectFrom}}">{{request.GET.redirectFrom}}</a>에서 넘어옴
                     </div>
                 {% endif %}
                 

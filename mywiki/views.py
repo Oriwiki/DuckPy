@@ -1,99 +1,229 @@
-from django.shortcuts import render
-from django.shortcuts import redirect
-from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect
-from NamuMarkParser import NamuMarkParser
-from bs4 import BeautifulSoup
-from .models import *
+# 쇼트컷
+from django.shortcuts import render, get_object_or_404, redirect
+# HTTP
+from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect, Http404
+# 예외
 from django.core.exceptions import ObjectDoesNotExist
 from django.db import IntegrityError
+# 뷰
+from django.contrib.auth.forms import UserCreationForm
+from django.views.generic.base import TemplateView, RedirectView
+from django.views.generic.list import ListView
+from django.views.generic.edit import CreateView, UpdateView
+from django.views import View
+from django.template import RequestContext
+# 모델
+from django.contrib.auth.models import User
+from .models import *
+# 기타 도구
+from django.core.paginator import Paginator, EmptyPage
+from django.core.urlresolvers import reverse
+# 기타
+from NamuMarkParser import NamuMarkParser
+from bs4 import BeautifulSoup
 import LocalSettings
 import difflib
 from urllib.parse   import quote, unquote
-from django.core.paginator import Paginator, EmptyPage
 import string
 from collections import OrderedDict
 import re
 from random import choice
-from django.views.generic.edit import CreateView
-from django.contrib.auth.forms import UserCreationForm
-from django.contrib.auth.models import User
 from ipware.ip import get_ip
-from django.core.urlresolvers import reverse
 import ipaddress
+import json
 
-# Create your views here.
 
-def edit(request, title=None, section=0):
-    if request.method == 'GET':
-        if title == None:
-            return redirect('/')
+## 위키 ##
+
+# 문서 보기
+class WikiView(TemplateView):
+    template_name = LocalSettings.default_skin + '/wiki.html'
+    redirect = False
+    def get(self, request, *args, **kwargs):
+        get = super(WikiView, self).get(request, *args, **kwargs)
+        if self.redirect:
+            return HttpResponseRedirect(reverse('view', kwargs={'title': self.redirect}) + '?redirectFrom=' + quote(self.kwargs['title']))
+        return get        
     
-        if 'section' in request.GET:
-            section = int(request.GET['section'])
+    def get_context_data(self, **kwargs):
+        context = super(WikiView, self).get_context_data(**kwargs)
+        try:
+            page = Page.objects.get(title=self.kwargs['title'], is_deleted=False)
+        except ObjectDoesNotExist:
+            raise Http404(json.dumps({'type': 'WikiPageNotFound', 'template_name': 'wiki.html', 'title': self.kwargs['title']}))
+            
+        if 'rev' in self.request.GET:
+            rev = self.request.GET['rev']
+        else:
+            rev = 0
+            
+        if page.namespace == 4:
+            categories = self.__category(self.request, page, rev)
+            context['categories'] = categories['categories']
+            context['page'] = categories['page']
+            context['num_pages'] = categories['num_pages']
+            
+        if page.is_created == False:
+            if page.namespace == 4:
+                raise Http404(json.dumps({'type': 'WikiPageNotFound', 'template_name': 'wiki.html', 'title': self.kwargs['title'], 'categories': categories}))
+            else:
+                raise Http404(json.dumps({'type': 'WikiPageNotFound', 'template_name': 'wiki.html', 'title': self.kwargs['title']}))
+        
+        if rev == 0:
+            revision = Revision.objects.filter(page=page.id).order_by('-id').first()
+        else:
+            try:
+                revision = Revision.objects.get(page=page, rev=rev)
+            except ObjectDoesNotExist:
+                raise Http404(json.dumps({'type': 'WikiPageNotFound', 'template_name': 'wiki.html', 'title': self.kwargs['title']}))
+            
+        if revision.text.startswith(('#redirect ', '#넘겨주기 ')):
+            context['parse'] = revision.text
+            if rev == 0:
+                if ('redirect' in self.request.GET and int(self.request.GET['redirect']) == 1) or not 'redirect' in self.request.GET:
+                    if revision.text.startswith('#redirect '):
+                        self.redirect = revision.text[10:]
+                    else:
+                        self.redirect = revision.text[6:]
+        else:
+            soup = BeautifulSoup(NamuMarkParser(revision.text, self.kwargs['title']).parse(), 'html.parser')
+            context['parse'] = soup.prettify()
+        
+        return context
+        
+    def __category(self, request, page, rev):
+        BASE_CODE, CHOSUNG = 44032, 588
+        CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
+        
+        if page.category == None or page.category == "":
+            return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '분류가 존재하지 않습니다.', 'title': self.kwargs['title']})
+            
+        categories = list(filter(None, page.category.split(',')))
+        
+        paginator = Paginator(categories, 20)
+        
+        if not 'page' in request.GET:
+            page_i = 1
+        else:
+            page_i = request.GET.get('page')
+            
+        try:
+            category_ids = paginator.page(page_i)
+        except EmptyPage:
+            category_ids = paginator.page(paginator.num_pages)
+            
+        category_titles = [ [], [], [], [], [], [], [] ]
+        for category_id in category_ids:
+            categorized_page = Page.objects.get(pk=category_id, is_created=True, is_deleted=False)
+            if categorized_page.namespace == 0:
+                category_titles[0].append(categorized_page.title)
+            elif categorized_page.namespace == 1:
+                category_titles[1].append(categorized_page.title[7:])
+            elif categorized_page.namespace == 2:
+                category_titles[2].append(categorized_page.title[4:])
+            elif categorized_page.namespace == 3:
+                category_titles[3].append(categorized_page.title[3:])
+            elif categorized_page.namespace == 4:
+                category_titles[4].append(categorized_page.title[3:])
+            elif categorized_page.namespace == 5:
+                category_titles[5].append(categorized_page.title[len(LocalSettings.project_name) + 1:])
+            elif categorized_page.namespace == 6:
+                category_titles[6].append(categorized_page.title[2:])
+        
+        categories = [ OrderedDict(), OrderedDict(), OrderedDict(), OrderedDict(), OrderedDict(), OrderedDict(), OrderedDict() ]
+        BASE_CODE, CHOSUNG = 44032, 588
+        CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
+        for j in range(0,7):
+            category_titles[j].sort(key=str.lower)
+            
+            for categorized_title in category_titles[j]:
+                if categorized_title.lower().startswith(tuple(string.ascii_lowercase)):
+                    try:
+                        categories[j][categorized_title[0].upper()].append(categorized_title)
+                    except KeyError:
+                        categories[j][categorized_title[0].upper()] = [categorized_title]
+                elif re.match('[ㄱ-ㅎㅏ-ㅣ가-힣]', categorized_title[0]):
+                    char_code = ord(categorized_title[0]) - BASE_CODE
+                    char1 = int(char_code / CHOSUNG)
+                    try:
+                        categories[j][CHOSUNG_LIST[char1]].append(categorized_title)
+                    except KeyError:
+                        categories[j][CHOSUNG_LIST[char1]] = [categorized_title]
+                else:
+                    try:
+                        categories[j]['etc'].append(categorized_title)
+                    except KeyError:
+                        categories[j]['etc'] = [categorized_title]
+                        
+        return {'categories': categories, 'page': int(page_i), 'num_pages': paginator.num_pages}
+                  
+# 문서 편집
+class EditView(TemplateView):
+    template_name = LocalSettings.default_skin + '/edit.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super(EditView, self).get_context_data(**kwargs)
+        
+        if 'section' in self.request.GET:
+            context['section'] = int(self.request.GET['section'])
+        else:
+            context['section'] = 0
         
         try:
-            page = Page.objects.get(title=title)
+            page = Page.objects.get(title=self.kwargs['title'])
         except ObjectDoesNotExist:
-            return render(request, LocalSettings.default_skin + '/edit.html', {'title': title, 'text': "", 'preview': "", 'section': 0})
+            context['text'] = ""
+            context['section'] = 0
+            return context
         else:
             if page.is_created == True:
-                text = Revision.objects.filter(page=page.id).order_by('-id').first().text
+                context['text'] = Revision.objects.filter(page=page).order_by('-id').first().text
             else:
-                text = ""
-            
-        if section > 0:
-            toc = NamuMarkParser(text, title).get_toc()
+                context['text'] = ""
+                
+        if context['section'] > 0 and context['text'] != "":
+            toc = NamuMarkParser(text, self.kwargs['title']).get_toc()
             try:
-                text = toc[section - 1][3]
+                context['text'] = toc[section - 1][3]
             except IndexError:
-                section = 0
+                context['section'] = 0
+                
+        return context    
         
-        return render(request, LocalSettings.default_skin + '/edit.html', {'title': title, 'text': text, 'preview': "", 'section': section})
-        
-    elif request.method == 'POST':
+    def post(self, request, *args, **kwargs):
         # 미리보기
         if 'preview' in request.POST:
-            soup = BeautifulSoup(NamuMarkParser(request.POST['text'], title).parse(), "html.parser")
-            return render(request, LocalSettings.default_skin + '/edit.html', {'title': title,'text': request.POST['text'], 'preview': soup.prettify(), 'section': request.POST['section']})
-    
-        # 저장
+            soup = BeautifulSoup(NamuMarkParser(request.POST['text'], self.kwargs['title']).parse(), "html.parser")
+            return render(request, LocalSettings.default_skin + '/edit.html', {'title': self.kwargs['title'],'text': request.POST['text'], 'preview': soup.prettify(), 'section': request.POST['section']})
         
-        namespace = __get_namespace(title)
+        # 저장
+        namespace = get_namespace(self.kwargs['title'])
         
         if namespace == 2:
             if not request.user.is_active or request.user.username != re.sub('\.(css|js)$', '', title[4:]):
-                return render(request, LocalSettings.default_skin + '/edit.html', {'title': title,'text': request.POST['text'], 'section': request.POST['section'], 'error': '사용자 문서는 본인만 편집 가능합니다.'})
+                return render(request, LocalSettings.default_skin + '/edit.html', {'title': self.kwargs['title'],'text': request.POST['text'], 'section': request.POST['section'], 'error': '사용자 문서는 본인만 편집 가능합니다.'})
                 
         # 사용자
-        editor = __get_user(request)
+        editor = get_user(request)
         
         text = request.POST['text']
         
+        if 'section' in request.POST:
+            section = int(request.POST['section'])
+        else:
+            section = 0
+        
         try:
-            Page(title=title, namespace=namespace, is_created=True).save()
+            Page(title=self.kwargs['title'], namespace=namespace, is_created=True).save()
         except IntegrityError:
-            page = Page.objects.get(title=title)
+            page = Page.objects.get(title=self.kwargs['title'])
             if page.is_created == True:
-                pro_revision = Revision.objects.filter(page=page.id).order_by('-id').first()
-                pro_parser = NamuMarkParser(pro_revision.text, title)
+                pro_revision = Revision.objects.filter(page=page).order_by('-id').first()
+                pro_parser = NamuMarkParser(pro_revision.text, self.kwargs['title'])
                 
                 # 단락 편집
                 if section > 0:
-                    toc = pro_parser.get_toc()
-                    text = pro_parser.toc_before
-                    for idx, each_toc in enumerate(toc):
-                        text += '=' * each_toc[2]
-                        text += each_toc[1]
-                        text += '=' * each_toc[2]
-                        text += '\n'
-                        if idx == section - 1:
-                            text += request.POST['text'] + '\n'
-                        else:
-                            try:
-                                text += each_toc[3]
-                            except IndexError:
-                                pass
-                
+                    text = self.__section(request, pro_parser, section)
                 
                 rev = pro_revision.rev + 1
                 increase = len(text) - len(pro_revision.text)
@@ -102,505 +232,356 @@ def edit(request, title=None, section=0):
                 increase = len(text)
                 pro_parser = None
                 page.is_created = True
-                page.save()
+                
+            if page.is_deleted == True:
+                page.is_deleted = False
+                
+            page.save()
         else:
-            page = Page.objects.get(title=title)
+            page = Page.objects.get(title=self.kwargs['title'])
             pro_parser = None
             rev = 1
             increase = len(text)
             
         Revision(text=text, page=page, comment=request.POST['comment'], rev=rev, increase=increase, user=editor['user'], ip=editor['ip']).save()
         
-        now_parser = NamuMarkParser(text, title)
+        now_parser = NamuMarkParser(text, self.kwargs['title'])
         
-        __insert(now_parser, pro_parser, page.id, rev)
+        insert(now_parser, pro_parser, page.id, rev)
         
-        return HttpResponseRedirect(reverse('view', kwargs={'title': title}) + '?alert=successEdit')
-        
-def view(request, title=None, rev=0):
-    if request.method == 'GET':
-        if title == None:
-            if request.path.startswith('/w/'):
-                 return redirect('/')
-            title = LocalSettings.project_name + ':' + LocalSettings.mainpage_title
+        return HttpResponseRedirect(reverse('view', kwargs={'title': self.kwargs['title']}) + '?alert=successEdit')
             
+    def __section(request, pro_parser, section):
+        toc = pro_parser.get_toc()
+        text = pro_parser.toc_before
+        for idx, each_toc in enumerate(toc):
+            text += '=' * each_toc[2]
+            text += each_toc[1]
+            text += '=' * each_toc[2]
+            text += '\n'
+            if idx == section - 1:
+                text += request.POST['text'] + '\n'
+            else:
+                try:
+                    text += each_toc[3]
+                except IndexError:
+                    pass
+        return text
+        
+# 문서 RAW 보기
+class RawView(View):
+    def get(self, request, *args, **kwargs):
         try:
-            page = Page.objects.get(title=title, is_deleted=False)
-        except ObjectDoesNotExist:
-            if Page.objects.all().count() > 0:
-                return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
-            else:
-                Page(title=title, namespace=5, is_created=True).save()
-                page = Page.objects.get(title=title)
-                Revision(text='Hello, World!', page=page, comment='This is testing revision.', rev=1, increase=len('Hello, World!')).save()
-                
-        
-              
-        if 'rev' in request.GET:
-            rev = request.GET['rev']
-
-        # 분류
-        if page.namespace == 4:
-            BASE_CODE, CHOSUNG = 44032, 588
-            CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
-            categories = {'sub': {}, 'template': {}, 'page': {}, 'project': {}}
-            
-            if page.category == None or page.category == "":
-                return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '분류가 존재하지 않습니다.', 'title': title})
-                
-            categories = list(filter(None, page.category.split(',')))
-            
-            paginator = Paginator(categories, 20)
-            
-            if not 'page' in request.GET:
-                page_i = 1
-            else:
-                page_i = request.GET.get('page')
-                
-            try:
-                category_ids = paginator.page(page_i)
-            except EmptyPage:
-                category_ids = paginator.page(paginator.num_pages)
-                
-            category_titles = [ [], [], [], [], [], [], [] ]
-            for category_id in category_ids:
-                categorized_page = Page.objects.get(pk=category_id, is_created=True, is_deleted=False)
-                if categorized_page.namespace == 0:
-                    category_titles[0].append(categorized_page.title)
-                elif categorized_page.namespace == 1:
-                    category_titles[1].append(categorized_page.title[7:])
-                elif categorized_page.namespace == 2:
-                    category_titles[2].append(categorized_page.title[4:])
-                elif categorized_page.namespace == 3:
-                    category_titles[3].append(categorized_page.title[3:])
-                elif categorized_page.namespace == 4:
-                    category_titles[4].append(categorized_page.title[3:])
-                elif categorized_page.namespace == 5:
-                    category_titles[5].append(categorized_page.title[len(LocalSettings.project_name) + 1:])
-                elif categorized_page.namespace == 6:
-                    category_titles[6].append(categorized_page.title[2:])
-            
-            categories = [ OrderedDict(), OrderedDict(), OrderedDict(), OrderedDict(), OrderedDict(), OrderedDict(), OrderedDict() ]
-            BASE_CODE, CHOSUNG = 44032, 588
-            CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
-            for j in range(0,7):
-                category_titles[j].sort(key=str.lower)
-                
-                for categorized_title in category_titles[j]:
-                    if categorized_title.lower().startswith(tuple(string.ascii_lowercase)):
-                        try:
-                            categories[j][categorized_title[0].upper()].append(categorized_title)
-                        except KeyError:
-                            categories[j][categorized_title[0].upper()] = [categorized_title]
-                    elif re.match('[ㄱ-ㅎㅏ-ㅣ가-힣]', categorized_title[0]):
-                        char_code = ord(categorized_title[0]) - BASE_CODE
-                        char1 = int(char_code / CHOSUNG)
-                        try:
-                            categories[j][CHOSUNG_LIST[char1]].append(categorized_title)
-                        except KeyError:
-                            categories[j][CHOSUNG_LIST[char1]] = [categorized_title]
-                    else:
-                        try:
-                            categories[j]['etc'].append(categorized_title)
-                        except KeyError:
-                            categories[j]['etc'] = [categorized_title]
-                
-                
-            
-            if page.is_created == True:
-                if rev == 0:
-                    revision = Revision.objects.filter(page=page.id).order_by('-id').first()
-                else:
-                    try:
-                        revision = Revision.objects.get(page=page.id, rev=rev)
-                    except ObjectDoesNotExist:
-                        return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title}, status=404)
-            
-                soup = BeautifulSoup(NamuMarkParser(revision.text, title).parse(), 'html.parser')
-                return render(request, LocalSettings.default_skin + '/wiki.html', {'parse': soup.prettify(), 'title': title, 'categories': categories, 'page': int(page_i), 'num_pages': paginator.num_pages})
-            else:
-                return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '문서에 리비전이 존재하지 않습니다.', 'title': title, 'categories': categories, 'page': int(page_i), 'num_pages': paginator.num_pages}, status=404)
-            
-        
-        if page.is_created == False:
-            return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
-
-        if rev == 0:
-            revision = Revision.objects.filter(page=page.id).order_by('-id').first()
-        else:
-            try:
-                revision = Revision.objects.get(page=page.id, rev=rev)
-            except ObjectDoesNotExist:
-                return render(request, LocalSettings.default_skin + '/wiki.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title}, status=404)
-                
-        if revision.text.startswith(('#redirect ', '#넘겨주기 ')):
-            if ('redirect' in request.GET and int(request.GET['redirect']) == 1) or not 'redirect' in request.GET:
-                if revision.text.startswith('#redirect '):
-                    return HttpResponseRedirect(reverse('view', kwargs={'title': revision.text[10:]}) + '?redirectFrom=' + quote(title))
-                else:
-                    return HttpResponseRedirect(reverse('view', kwargs={'title': revision.text[6:]}) + '?redirectFrom=' + quote(title))
-                
-        soup = BeautifulSoup(NamuMarkParser(revision.text, title).parse(), 'html.parser')
-        return render(request, LocalSettings.default_skin + '/wiki.html', {'parse': soup.prettify(), 'title': title})
-        
-def raw(request, title=None, rev=0):
-    if request.method == 'GET':
-        if title == None:
-            return redirect('/')
-            
-        try:
-            page_id = Page.objects.get(title=title).id
+            page = Page.objects.get(title=self.kwargs['title'])
         except ObjectDoesNotExist:
             return HttpResponseNotFound()
             
         if 'rev' in request.GET:
             rev = request.GET['rev']
-        
+        else:
+            rev = 0
+            
         if rev == 0:
-            return HttpResponse(Revision.objects.filter(page=page_id).order_by('-id').first().text, content_type='text/plain; charset="utf-8"')
+            return HttpResponse(Revision.objects.filter(page=page).order_by('-id').first().text, content_type='text/plain; charset="utf-8"')
         else:
             try:
-                return HttpResponse(Revision.objects.get(page=page_id, rev=rev).text, content_type='text/plain; charset="utf-8"')
+                return HttpResponse(Revision.objects.get(page=page, rev=rev).text, content_type='text/plain; charset="utf-8"')
             except ObjectDoesNotExist:
                 return HttpResponseNotFound()
-                
-def diff(request, title=None):
-    if request.method == 'GET':
-        if title == None:
-            return redirect('/')
-            
+
+# 문서 diff
+class DiffView(TemplateView):
+    template_name = LocalSettings.default_skin + '/diff.html'
+
+    def get_context_data(self, **kwargs):
+        context = super(DiffView, self).get_context_data(**kwargs)
         try:
-            page_id = Page.objects.get(title=title).id
+            page = Page.objects.get(title=self.kwargs['title'], is_deleted=False, is_created=True)
         except ObjectDoesNotExist:
-            return render(request, LocalSettings.default_skin + '/diff.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
+            raise Http404(json.dumps({'type': 'WikiPageNotFound', 'template_name': 'diff.html', 'title': self.kwargs['title']}))
             
-        if not 'rev' in request.GET or not 'oldrev' in request.GET:
-            return render(request, LocalSettings.default_skin + '/diff.html', {'error': '비교하려는 리비전이 제시되지 않았습니다.', 'title': title}, status=412)
-            
-        rev = request.GET['rev']
-        oldrev = request.GET['oldrev']
+        if not 'rev' in self.request.GET or not 'oldrev' in self.request.GET:
+            raise Http404(json.dumps({'type': 'WikiRevisionNotFound', 'template_name': 'diff.html', 'title': self.kwargs['title']}))
+
+        rev = self.request.GET['rev']
+        oldrev = self.request.GET['oldrev']
         
         if rev == oldrev:
-            return render(request, LocalSettings.default_skin + '/diff.html', {'error': '비교하려는 리비전이 같습니다.', 'title': title}, status=412)
+            context['error'] = '비교하려는 리비전이 같습니다.'
+            return context
             
         try:
-            text = Revision.objects.get(page=page_id, rev=rev).text
+            text = Revision.objects.get(page=page, rev=rev).text
+            oldtext = Revision.objects.get(page=page, rev=oldrev).text
         except ObjectDoesNotExist:
-            return render(request, LocalSettings.default_skin + '/diff.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title}, status=404)
-            
-        try:
-            oldtext = Revision.objects.get(page=page_id, rev=oldrev).text
-        except ObjectDoesNotExist:
-            return render(request, LocalSettings.default_skin + '/diff.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title}, status=404)
+            raise Http404(json.dumps({'type': 'WikiRevisionNotFound', 'template_name': 'diff.html', 'title': self.kwargs['title']}))
             
         if text == oldtext:
-            return render(request, LocalSettings.default_skin + '/diff.html', {'diff': '동일합니다.', 'title': title})
+            context['diff'] = '동일합니다.'
+            return context
             
-        diff = difflib.HtmlDiff().make_table(oldtext.splitlines(True), text.splitlines(True),  context=True).replace(' nowrap="nowrap"', '')
-        
-        return render(request, LocalSettings.default_skin + '/diff.html', {'diff': diff, 'title': title})
-        
-def history(request, title=None):
-    if request.method == 'GET':
-        if title == None:
-            return redirect('/')
+        if text == "" or oldtext == "":
+            context['diff'] = '비교하려는 리비전에 글이 없습니다.'
+            return context
             
+        context['diff'] = difflib.HtmlDiff().make_table(oldtext.splitlines(True), text.splitlines(True),  context=True).replace(' nowrap="nowrap"', '')
+        
+        return context
+            
+# 문서 역사
+class HistoryView(ListView):
+    template_name = LocalSettings.default_skin + '/history.html'
+    context_object_name = 'historys'
+    paginate_by = 20
+    
+    def get_queryset(self):
         try:
-            page_id = Page.objects.get(title=title).id
+            page = Page.objects.get(title=self.kwargs['title'])
         except ObjectDoesNotExist:
-            return render(request, LocalSettings.default_skin + '/history.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
+            raise Http404(json.dumps({'type': 'WikiPageNotFound', 'template_name': 'history.html', 'title': self.kwargs['title']}))
+        return Revision.objects.filter(page=page).order_by('-id').all()
+
+# 문서 되돌리기
+class RevertView(TemplateView):
+    template_name = LocalSettings.default_skin + '/revert.html'
             
-        paginator = Paginator(Revision.objects.filter(page=page_id).order_by('-id').all(), 20)
+    def get_context_data(self, **kwargs):
+        context = super(RevertView, self).get_context_data(**kwargs)
         
-        if not 'page' in request.GET:
-            page = 1
-        else:
-            page = request.GET.get('page')
+        if not 'rev' in self.request.GET:
+            raise Http404(json.dumps({'type': 'WikiRevisionNotFound', 'template_name': 'revert.html', 'title': self.kwargs['title']}))
+            
+        rev = self.request.GET['rev']       
             
         try:
-            historys = paginator.page(page)
-        except EmptyPage:
-            historys = paginator.page(paginator.num_pages)
-            
-        return render(request, LocalSettings.default_skin + '/history.html', {'historys': historys, 'title': title, 'page': int(page), 'num_pages': paginator.num_pages})
-        
-def revert(request, title=None):
-    if request.method == 'GET':
-        if title == None:
-            return redirect('/')
-            
-        if not 'rev' in request.GET:
-            return render(request, LocalSettings.default_skin + '/revert.html', {'error': '되돌리려는 리비전이 제시되지 않았습니다.', 'title': title}, status=412)
-            
-        rev = request.GET['rev']
-        
-        try:
-            page_id = Page.objects.get(title=title).id
+            page = Page.objects.get(title=self.kwargs['title'])
         except ObjectDoesNotExist:
-            return render(request, LocalSettings.default_skin + '/revert.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
+            raise Http404(json.dumps({'type': 'WikiPageNotFound', 'template_name': 'revert.html', 'title': self.kwargs['title']}))
             
         try:
-            text = Revision.objects.get(page=page_id, rev=rev).text
+            revision = Revision.objects.get(page=page, rev=rev)
         except ObjectDoesNotExist:
-            return render(request, LocalSettings.default_skin + '/revert.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title}, status=404)
+            raise Http404(json.dumps({'type': 'WikiRevisionNotFound', 'template_name': 'revert.html', 'title': self.kwargs['title']}))
             
-            
-        return render(request, LocalSettings.default_skin + '/revert.html', {'title': title, 'rev': rev, 'text': text})
-            
+        context['text'] = revision.text
+        context['rev'] = rev
+        return context
         
-    elif request.method == 'POST':
-        if title == None:
-            return redirect('/')
+    def post(self, request, *args, **kwargs):
+        if not 'rev' in self.request.POST:
+            return render(self.request, LocalSettings.default_skin + '/revert.html', {'error': '되돌리려는 리비전이 제시되지 않았습니다.', 'title': self.kwargs['title']}, status=412)
             
-        if not 'rev' in request.POST:
-            return render(request, LocalSettings.default_skin + '/revert.html', {'error': '되돌리려는 리비전이 제시되지 않았습니다.', 'title': title}, status=412)
-            
-        rev = request.POST['rev']
+        rev = self.request.POST['rev']
         
         try:
-            page = Page.objects.get(title=title)
+            page = Page.objects.get(title=self.kwargs['title'])
         except ObjectDoesNotExist:
-            return render(request, LocalSettings.default_skin + '/revert.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
+            return render(self.request, LocalSettings.default_skin + '/revert.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': self.kwargs['title']}, status=404)
             
         try:
-            revert_revision = Revision.objects.get(page=page.id, rev=rev)
+            revert_revision = Revision.objects.get(page=page, rev=rev)
         except ObjectDoesNotExist:
-            return render(request, LocalSettings.default_skin + '/revert.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': title}, status=404)
+            return render(self.request, LocalSettings.default_skin + '/revert.html', {'error': '해당 리비전이 존재하지 않습니다.', 'title': self.kwargs['title']}, status=404)
             
-        pro_revision = Revision.objects.filter(page=page.id).order_by('-id').first()
+        pro_revision = Revision.objects.filter(page=page).order_by('-id').first()
         new_rev = pro_revision.rev + 1
         increase = len(revert_revision.text) - len(pro_revision.text)
         
         # 사용자
-        editor = __get_user(request)
-                
+        editor = get_user(self.request)
+        
         if page.namespace == 2:
-            if not request.user.is_active or request.user.username != re.sub('\.(css|js)$', '', title[4:]):
-                return render(request, LocalSettings.default_skin + '/revert.html', {'title': title,'text': revert_revision.text, 'rev': rev, 'error': '사용자 문서는 본인만 편집 가능합니다.'})
+            if not self.request.user.is_active or self.request.user.username != re.sub('\.(css|js)$', '', self.kwargs['title'][4:]):
+                return render(request, LocalSettings.default_skin + '/revert.html', {'title': self.kwargs['title'],'text': revert_revision.text, 'rev': rev, 'error': '사용자 문서는 본인만 편집 가능합니다.'})
                 
-            
-        Revision(text=revert_revision.text, page=page, comment='r' + str(revert_revision.rev) + '으로 되돌림: ' + request.POST['comment'], rev=new_rev, increase=increase, user=editor['user'], ip=editor['ip']).save()
+        Revision(text=revert_revision.text, page=page, comment='r' + str(revert_revision.rev) + '으로 되돌림: ' + self.request.POST['comment'], rev=new_rev, increase=increase, user=editor['user'], ip=editor['ip']).save()
         
-        revert_parser = NamuMarkParser(revert_revision.text, title)
-        pro_parser = NamuMarkParser(pro_revision.text, title)
+        revert_parser = NamuMarkParser(revert_revision.text, self.kwargs['title'])
+        pro_parser = NamuMarkParser(pro_revision.text, self.kwargs['title'])
         
-        __insert(revert_parser, pro_parser, page.id, new_rev)
+        insert(revert_parser, pro_parser, page.id, new_rev)
         
-        return HttpResponseRedirect(reverse('view', kwargs={'title': title}) + '?alert=successRevert')
-
+        return HttpResponseRedirect(reverse('view', kwargs={'title': self.kwargs['title']}) + '?alert=successRevert')
         
+# 랜덤
 def random(request):
     my_ids = Page.objects.filter(is_deleted=False, is_created=True, namespace=0).values_list('id', flat=True)
     rand_ids = choice(list(my_ids))
     return redirect('view', title=Page.objects.get(id=rand_ids).title)
+ 
+# 문서 이동
+class RenameView(UpdateView):
+    fields = ['title']
+    template_name = LocalSettings.default_skin + '/rename.html'
     
-def rename(request, title=None):
-    if request.method == 'GET':
-        if title == None:
-            return redirect('/')
-            
-        return render(request, LocalSettings.default_skin + '/rename.html', {'title': title})
-        
-    elif request.method == 'POST':
-        if title == None:
-            return redirect('/')
-            
+    def get_object(self):
         try:
-            page = Page.objects.get(title=title)
+            return Page.objects.get(title=self.kwargs['title'], is_created=True)
         except ObjectDoesNotExist:
-            return render(request, LocalSettings.default_skin + '/rename.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
-            
-        pro_revision = Revision.objects.filter(page=page.id).order_by('-id').first()
-        
-        
-        editor = __get_user(request)
-        
-        namespace = __get_namespace(title)
-        
-        if namespace == 2:
+            raise Http404(json.dumps({'type': 'WikiPageNotFound', 'template_name': 'rename.html', 'title': self.kwargs['title']}))
+    
+    def form_valid(self, form):
+        namespace = get_namespace(self.request.POST['title'])
+        if self.object.namespace == 2 or namespace == 2:
             return render(request, LocalSettings.default_skin + '/rename.html', {'title': title, 'error': '사용자 문서는 이동할 수 없습니다.'})
+        pro_revision = Revision.objects.filter(page=self.object).order_by('-id').first()
+        editor = get_user(self.request)
+        self.object.namespace = namespace
         
-        page.title = request.POST['changedTitle']
-        page.namespace = namespace
-        page.save()
-
-            
-        Revision(text=pro_revision.text, page=page, comment= request.POST['changedTitle'] + '으로 이동: ' + request.POST['comment'], rev=pro_revision.rev + 1, increase=0, user=editor['user'], ip=editor['ip']).save()
+        Revision(text=pro_revision.text, page=self.object, comment= self.request.POST['title'] + '으로 이동: ' + self.request.POST['comment'], rev=pro_revision.rev + 1, increase=0, user=editor['user'], ip=editor['ip']).save()
         
-        return HttpResponseRedirect(reverse('view', kwargs={'title': title}) + '?alert=successRename')
+        return super(RenameView, self).form_valid(form)
         
-def backlink(request, title=None):
-    if request.method == 'GET':
-        if title == None:
-            return redirect('/')
-            
+    def get_success_url(self):
+        return reverse('view', kwargs={'title': self.request.POST['title']}) + '?alert=successRename'
+    
+# 역링크
+class BacklinkView(TemplateView):
+    template_name = LocalSettings.default_skin + '/backlink.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super(BacklinkView, self).get_context_data(**kwargs)
+    
         try:
-            page = Page.objects.get(title=title)
+            page = Page.objects.get(title=self.kwargs['title'])
         except ObjectDoesNotExist:
-            return render(request, LocalSettings.default_skin + '/backlink.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
-        
+            raise Http404(json.dumps({'type': 'WikiPageNotFound', 'template_name': 'backlink.html', 'title': self.kwargs['title']}))
+            
         if page.backlink == None or page.backlink == "":
-            return render(request, LocalSettings.default_skin + '/backlink.html', {'error': '역링크가 존재하지 않습니다.', 'title': title})
+            raise Http404(json.dumps({'type': 'BacklinkNotFound', 'template_name': 'backlink.html', 'title': self.kwargs['title']}))
             
         backlinks = list(filter(None, page.backlink.split(',')))
         
         paginator = Paginator(backlinks, 20)
         
-        if not 'page' in request.GET:
-            page_i = 1
+        if not 'page' in self.request.GET:
+            context['page'] = 1
         else:
-            page_i = request.GET.get('page')
+            context['page'] = self.request.GET.get('page')
             
         try:
-            backlink_ids = paginator.page(page_i)
+            backlink_ids = paginator.page(context['page'])
         except EmptyPage:
             backlink_ids = paginator.page(paginator.num_pages)
-            
+
         backlink_titles = []
         for backlink_id in backlink_ids:
             backlink_titles.append(Page.objects.get(pk=backlink_id).title)
         backlink_titles.sort(key=str.lower)
         
-        backlinks = OrderedDict()
+        context['backlinks'] = OrderedDict()
         BASE_CODE, CHOSUNG = 44032, 588
         CHOSUNG_LIST = ['ㄱ', 'ㄲ', 'ㄴ', 'ㄷ', 'ㄸ', 'ㄹ', 'ㅁ', 'ㅂ', 'ㅃ', 'ㅅ', 'ㅆ', 'ㅇ', 'ㅈ', 'ㅉ', 'ㅊ', 'ㅋ', 'ㅌ', 'ㅍ', 'ㅎ']
         for backlinked_title in backlink_titles:
             if backlinked_title.lower().startswith(tuple(string.ascii_lowercase)):
                 try:
-                    backlinks[backlinked_title[0].upper()].append(backlinked_title)
+                    context['backlinks'][backlinked_title[0].upper()].append(backlinked_title)
                 except KeyError:
-                    backlinks[backlinked_title[0].upper()] = []
-                    backlinks[backlinked_title[0].upper()].append(backlinked_title)
+                    context['backlinks'][backlinked_title[0].upper()] = []
+                    context['backlinks'][backlinked_title[0].upper()].append(backlinked_title)
             elif re.match('[ㄱ-ㅎㅏ-ㅣ가-힣]', backlinked_title[0]):
                 char_code = ord(backlinked_title[0]) - BASE_CODE
                 char1 = int(char_code / CHOSUNG)
                 try:
-                    backlinks[CHOSUNG_LIST[char1]].append(backlinked_title)
+                    context['backlinks'][CHOSUNG_LIST[char1]].append(backlinked_title)
                 except KeyError:
-                    backlinks[CHOSUNG_LIST[char1]] = []
-                    backlinks[CHOSUNG_LIST[char1]].append(backlinked_title)
+                    context['backlinks'][CHOSUNG_LIST[char1]] = []
+                    context['backlinks'][CHOSUNG_LIST[char1]].append(backlinked_title)
             else:
                 try:
-                    backlinks['etc'].append(backlinked_title)
+                    context['backlinks']['etc'].append(backlinked_title)
                 except KeyError:
-                    backlinks['etc'] = []
-                    backlinks['etc'].append(backlinked_title)
-                
-        return render(request, LocalSettings.default_skin + '/backlink.html', {'backlinks': backlinks, 'title': title, 'page': int(page_i), 'num_pages': paginator.num_pages})
+                    context['backlinks']['etc'] = []
+                    context['backlinks']['etc'].append(backlinked_title)
+                    
+        context['num_pages'] = paginator.num_pages
         
-def delete(request, title=None):
-    if request.method == 'GET':
-        if title == None:
-            return redirect('/')
-            
-        return render(request, LocalSettings.default_skin + '/delete.html', {'title': title})
-        
-    elif request.method == 'POST':
-        if title == None:
-            return redirect('/')
-            
+        return context
+    
+# 문서 삭제
+class DeleteView(UpdateView):
+    fields = ['is_deleted']
+    template_name = LocalSettings.default_skin + '/delete.html'
+
+    def get_object(self):
         try:
-            page = Page.objects.get(title=title)
+            return Page.objects.get(title=self.kwargs['title'], is_created=True, is_deleted=False)
         except ObjectDoesNotExist:
-            return render(request, LocalSettings.default_skin + '/delete.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': title}, status=404)
-            
-        pro_revision = Revision.objects.filter(page=page.id).order_by('-id').first()
+            raise Http404(json.dumps({'type': 'WikiPageNotFound', 'template_name': 'delete.html', 'title': self.kwargs['title']}))
+
+    def form_valid(self, form):
+        if self.object.namespace == 2:
+            return render(request, LocalSettings.default_skin + '/rename.html', {'title': title, 'error': '사용자 문서는 삭제할 수 없습니다.'})
+        pro_revision = Revision.objects.filter(page=self.object).order_by('-id').first()
+        editor = get_user(self.request)
         
+        Revision(text="", page=self.object, comment= '삭제: ' + self.request.POST['comment'], rev=pro_revision.rev + 1, increase=-len(pro_revision.text), user=editor['user'], ip=editor['ip']).save()
         
-        editor = __get_user(request)
+        return super(DeleteView, self).form_valid(form)
         
+    def get_success_url(self):
+        return reverse('view', kwargs={'title': self.request.POST['title']}) + '?alert=successDelete'
         
-        if page.namespace == 2:
-            if not request.user.is_active or request.user.username != re.sub('\.(css|js)$', '', title[4:]):
-                return render(request, LocalSettings.default_skin + '/delete.html', {'title': title, 'error': '사용자 문서는 본인만 삭제 가능합니다.'})
-        
-        page.is_deleted = True
-        page.save()
-            
-        Revision(text="", page=page, comment='삭제: ' + request.POST['comment'], rev=pro_revision.rev + 1, increase=-len(pro_revision.text), user=editor['user'], ip=editor['ip']).save()
-        
-        return HttpResponseRedirect(reverse('view', kwargs={'title': title}) + '?alert=successDelete')
-        
-def contribution(request, editor=None):
-    if request.method == 'GET':
-        if editor == None:
-            return redirect('/')
-        
+class ContributionView(ListView):
+    template_name = LocalSettings.default_skin + '/contribution.html'
+    context_object_name = 'contributions'
+    paginate_by = 20
+    
+    def get_queryset(self):
         try:
-            ipaddress.ip_address(editor)
+            ipaddress.ip_address(self.kwargs['editor'])
         except ValueError:
             # 회원
             try:
-                editor_id = User.objects.get(username=editor).id
-            except ObjectDoesNotExist:
-                return render(request, LocalSettings.default_skin + '/contribution.html', {'editor': editor, 'error': '해당하는 사용자가 없습니다.'})
-            else:
-                contribution = Revision.objects.filter(user_id=editor_id).order_by('-id').all()
+                editor = User.objects.get(username=self.kwargs['editor'])
+                return Revision.objects.filter(user_id=editor).order_by('-id').all()
+            except User.DoesNotExist:
+                raise Http404(json.dumps({'type': 'UserNotFound', 'template_name': 'contribution.html', 'editor': self.kwargs['editor']}))
+            except Revision.DoesNotExist:
+                raise Http404(json.dumps({'type': 'ContributionNotFound', 'template_name': 'contribution.html', 'editor': self.kwargs['editor']}))
         else:
             # IP 사용자
             try:
-                editor_id = Ip.objects.get(ip=editor).id
-            except ObjectDoesNotExist:
-                return render(request, LocalSettings.default_skin + '/contribution.html', {'editor': editor, 'error': '해당하는 사용자가 없습니다.'})
-            else:
-                contribution = Revision.objects.filter(ip_id=editor_id).order_by('-id').all()
-                
-        paginator = Paginator(contribution, 20)
+                editor = Ip.objects.get(ip=self.kwargs['editor'])
+                return Revision.objects.filter(ip=editor).order_by('-id').all()
+            except Ip.DoesNotExist:
+                raise Http404(json.dumps({'type': 'UserNotFound', 'template_name': 'contribution.html', 'editor': self.kwargs['editor']}))
+            except Revision.DoesNotExist:
+                raise Http404(json.dumps({'type': 'ContributionNotFound', 'template_name': 'contribution.html', 'editor': self.kwargs['editor']}))
         
-        if not 'page' in request.GET:
-            page = 1
-        else:
-            page = request.GET.get('page')
-            
-        try:
-            contributions = paginator.page(page)
-        except EmptyPage:
-            contributions = paginator.page(paginator.num_pages)
-            
-        return render(request, LocalSettings.default_skin + '/contribution.html', {'contributions': contributions, 'editor': editor, 'page': int(page), 'num_pages': paginator.num_pages})
-            
-            
-def __save_category(each_category, page_id):
+  
+# 404 페이지
+def page_not_found(request, exception):
     try:
-        each_category_page = Page.objects.get(title=each_category)
-    except ObjectDoesNotExist:
-        Page(title=each_category, namespace=4, category=str(page_id) + ',', is_created=False).save()
+        exception = json.loads(str(exception))
+    except json.decoder.JSONDecodeError:
+        return render(request, LocalSettings.default_skin + '/404.html', {}, status=404)
     else:
-        if each_category_page.category == None:
-            each_category_page.category = str(page_id) + ','
-        else:
-            each_category_page.category += str(page_id) + ','
-        each_category_page.save()
+        if 'type' in exception:
+            if exception['type'] == "WikiPageNotFound":
+                if 'categories' in exception:
+                    return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '해당 문서가 존재하지 않습니다.', 'title': exception['title'], 'categories': exception['categories']['categories'], 'page': exception['categories']['page'], 'num_pages': exception['categories']['num_pages']}, status=404)
+                else:
+                    return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '해당 문서가 존재하지 않습니다.', 'title': exception['title']}, status=404)
+            elif exception['type'] == "WikiRevisionNotFound":
+                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '해당 리비전이 존재하지 않습니다.', 'title': exception['title']}, status=404)
+            elif exception['type'] == "ErrorUserPage":
+                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '사용자 문서는 본인만 편집 가능합니다.', 'title': exception['title']})
+            elif exception['type'] == "BacklinkNotFound":
+                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '역링크가 존재하지 않습니다.', 'title': exception['title']})
+            elif exception['type'] == "BacklinkNotFound":
+                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '기여가 존재하지 않습니다.', 'editor': exception['editor']})
         
-def __save_backlink(each_link, page_id):
-    try:
-        each_link_page = Page.objects.get(title=each_link)
-    except ObjectDoesNotExist:
-        namespace = __get_namespace(each_link)
-        Page(title=each_link, namespace=namespace, backlink=str(page_id) + ',', is_created=False).save()
-    else:
-        if each_link_page.backlink == None:
-            each_link_page.backlink = str(page_id) + ','
-        else:
-            each_link_page.backlink += str(page_id) + ','
-        each_link_page.save()
+
+## 회원 ##
+class signup(CreateView):
+    template_name = LocalSettings.default_skin + '/signup.html'
+    form_class = UserCreationForm
+    success_url = "/?alert=successSignup"
+
         
-def __get_user(request):
-    if request.user.is_active:
-        user = User.objects.get(username=request.user.username)
-        ip = None
-    else:
-        user = None
-        ip_address = get_ip(request)
-        try:
-            ip = Ip.objects.get(ip=ip_address)
-        except ObjectDoesNotExist:
-            Ip(ip=ip_address).save()
-            ip = Ip.objects.get(ip=ip_address)
-            
-    return {'user': user, 'ip': ip}
-    
-def __get_namespace(title):
+## 공통 함수 ##
+def get_namespace(title):
     if title.startswith('DuckPy:'):
         namespace = 1
     elif title.startswith('파일:'):
@@ -617,8 +598,23 @@ def __get_namespace(title):
         namespace = 0
         
     return namespace
-    
-def __insert(now_parser, pro_parser, page_id, rev):
+
+def get_user(request):
+    if request.user.is_active:
+        user = User.objects.get(username=request.user.username)
+        ip = None
+    else:
+        user = None
+        ip_address = get_ip(request)
+        try:
+            ip = Ip.objects.get(ip=ip_address)
+        except ObjectDoesNotExist:
+            Ip(ip=ip_address).save()
+            ip = Ip.objects.get(ip=ip_address)
+            
+    return {'user': user, 'ip': ip}
+
+def insert(now_parser, pro_parser, page_id, rev):
     # 분류
     now_category = set(now_parser.get_category())
     if rev > 1:
@@ -629,10 +625,10 @@ def __insert(now_parser, pro_parser, page_id, rev):
             each_category_page.save()
         
         for each_category in now_category - pro_category:
-            __save_category(each_category, page_id)
+            save_category(each_category, page_id)
     else:
         for each_category in now_category:
-            __save_category(each_category, page_id)
+            save_category(each_category, page_id)
             
     # 역링크
     now_links = set(now_parser.get_link())
@@ -644,15 +640,33 @@ def __insert(now_parser, pro_parser, page_id, rev):
             each_link_page.save()
             
         for each_link in now_links - pro_links:
-            __save_backlink(each_link, page_id)
+            save_backlink(each_link, page_id)
     else:
         for each_link in now_links:
-            __save_backlink(each_link, page_id)
+            save_backlink(each_link, page_id)
+            
+def save_backlink(each_link, page_id):
+    try:
+        each_link_page = Page.objects.get(title=each_link)
+    except ObjectDoesNotExist:
+        namespace = __get_namespace(each_link)
+        Page(title=each_link, namespace=namespace, backlink=str(page_id) + ',', is_created=False).save()
+    else:
+        if each_link_page.backlink == None:
+            each_link_page.backlink = str(page_id) + ','
+        else:
+            each_link_page.backlink += str(page_id) + ','
+        each_link_page.save()
 
-
+def save_category(each_category, page_id):
+    try:
+        each_category_page = Page.objects.get(title=each_category)
+    except ObjectDoesNotExist:
+        Page(title=each_category, namespace=4, category=str(page_id) + ',', is_created=False).save()
+    else:
+        if each_category_page.category == None:
+            each_category_page.category = str(page_id) + ','
+        else:
+            each_category_page.category += str(page_id) + ','
+        each_category_page.save()
         
-class signup(CreateView):
-    template_name = LocalSettings.default_skin + '/signup.html'
-    form_class = UserCreationForm
-    success_url = "/?alert=successSignup"
-    

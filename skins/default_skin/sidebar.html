@@ -4,8 +4,8 @@
         <div class="list-group">
             <a href="{% url 'view' title=title %}" class="list-group-item {% if function == 'view' %}active{% endif %}">문서</a>
             <a href="{% url 'edit' title=title %}" class="list-group-item {% if function == 'edit' %}active{% endif %}">편집</a>
-            <a href="{% url 'rename' title=title %}" class="list-group-item {% if function == 'rename' %}active{% endif %}">이동</a>
             <a href="{% url 'history' title=title %}" class="list-group-item {% if function == 'history' %}active{% endif %}">역사</a>
+            <a href="{% url 'rename' title=title %}" class="list-group-item {% if function == 'rename' %}active{% endif %}">이동</a>
             <a href="{% url 'backlink' title=title %}" class="list-group-item {% if function == 'backlink' %}active{% endif %}">역링크</a>
             <a href="{% url 'delete' title=title %}" class="list-group-item {% if function == 'delete' %}active{% endif %}">삭제</a>
             <a href="/discuss/{{title|urlencode}}" class="list-group-item {% if function == 'discuss' %}active{% endif %}">토론</a>
