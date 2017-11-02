@@ -6,13 +6,14 @@ class Page(models.Model):
     namespace = models.PositiveIntegerField(blank=False)
     backlink = models.TextField(null=True)
     category = models.TextField(null=True)
+    acl = models.TextField(null=True)
     is_deleted = models.BooleanField(default=False)
     is_created = models.BooleanField(default=False)
     
 class Revision(models.Model):
     text = models.TextField()
     createDate = models.DateTimeField(auto_now_add=True)
-    comment = models.TextField(null=True)
+    comment = models.CharField(null=True, max_length=255)
     user = models.ForeignKey('auth.user', on_delete=models.SET_NULL, null=True)
     ip = models.ForeignKey('ip', on_delete=models.SET_NULL, null=True)
     page = models.ForeignKey('page', on_delete=models.CASCADE)
@@ -23,9 +24,3 @@ class Ip(models.Model):
     ip = models.CharField(unique=True, blank=False, max_length=15)
     user = models.ForeignKey('auth.user', on_delete=models.SET_NULL, null=True)
     
-class Log(models.Model):
-    type = models.PositiveIntegerField(blank=False)
-    target = models.PositiveIntegerField(blank=False)
-    comment = models.TextField(null=True)
-    user = models.ForeignKey('auth.user', on_delete=models.SET_NULL, null=True)
-    ip = models.ForeignKey('ip', on_delete=models.SET_NULL, null=True)
