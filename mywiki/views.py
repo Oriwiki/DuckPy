@@ -527,10 +527,8 @@ class RecentChangesView(ListView):
     template_name = LocalSettings.default_skin + '/recentchanges.html'
     context_object_name = 'changes'
     paginate_by = 20
-    
-    def get_queryset(self):
-        return Revision.objects.order_by('-id').all()
-
+    model = Revision
+    ordering = ['-id']
  
 # 404 페이지
 def page_not_found(request, exception):
