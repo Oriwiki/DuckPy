@@ -1,0 +1,67 @@
+{% extends "default_skin/base.html" %}
+{% load model %}
+{% block head %}
+        <title>최근 변경 내역 - {{PROJECT_NAME}}</title>
+{% endblock head %}
+{% block content %}
+
+            
+            <!--Main column-->
+            <div class="col-lg-12">
+
+                <!--First row-->
+                <div class="row wow fadeIn" data-wow-delay="0.4s">
+                    <div class="col-lg-12">
+                        <div class="divider-new">
+                            <h2 class="h2-responsive" id="title">최근 변경 내역</h2>
+                        </div>
+                        {% if error %}
+                            <div class="alert alert-danger">
+                                <strong>오류!</strong>
+                                {{ error }}
+                            </div>
+                        {% else %}
+                            <div class="wiki-content">
+                                <div class="btn-group" role="group">
+                                    {% if page_obj.has_previous %}
+                                    <a class="btn btn-primary btn-sm" href="?page={{ page_obj.previous_page_number }}">
+                                        <span class="icon ion-chevron-left"></span>Past
+                                    </a>
+                                    {% endif %}
+                                    {% if page_obj.has_next %}
+                                    <a class="btn btn-primary btn-sm" href="?page={{ page_obj.next_page_number }}">
+                                        <span class="icon ion-chevron-right"></span>Next
+                                    </a>
+                                    {% endif %}
+                                </div>
+                                <ul class="wiki-list">
+                                    {% for change in changes %}
+                                        <li>
+                                            <time datetime="{{ change.createDate }}" data-format="Y-m-d H:i:s">{{ change.createDate }}</time>
+                                            {% with title=change.page_id|get_model:"Page"|get_attribute:"title" %}
+                                                <a href="{% url 'view' title=title %}">{{ title }}</a>
+                                            {% endwith %}
+                                            ({% if change.increase > 0 %}<span style="color: green;">+{{change.increase}}</span>{% elif change.increase < 0 %}<span style="color: red;">{{change.increase}}</span>{% else %}<span style="color: gray;">0</span>{% endif %})
+                                            {% if change.user_id %}
+                                                {% with username=change.user_id|get_model:"User"|get_attribute:"username" %}
+                                                    <a href="{% url 'contribution' editor=username %}">{{ username }}</a>
+                                                {% endwith %}
+                                            {% endif %}
+                                            {% if change.ip_id %}
+                                                {% with ip=change.ip_id|get_model:"Ip"|get_attribute:"ip" %}
+                                                    <a href="{% url 'contribution' editor=ip %}">{{ ip }}</a>
+                                                {% endwith %}
+                                            {% endif %}
+                                            (<span style="color: gray">{{ change.comment }}</span>)
+                                        </li>
+                                    {% endfor %}
+                                </ul>
+                            </div>
+                        {% endif %}
+
+                </div>
+                <!--/.First row-->
+                
+                
+
+{% endblock content %}

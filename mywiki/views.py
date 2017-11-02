@@ -521,7 +521,49 @@ class DeleteView(UpdateView):
         
     def get_success_url(self):
         return reverse('view', kwargs={'title': self.request.POST['title']}) + '?alert=successDelete'
+ 
         
+class RecentChangesView(ListView):
+    template_name = LocalSettings.default_skin + '/recentchanges.html'
+    context_object_name = 'changes'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        return Revision.objects.order_by('-id').all()
+
+ 
+# 404 페이지
+def page_not_found(request, exception):
+    try:
+        exception = json.loads(str(exception))
+    except json.decoder.JSONDecodeError:
+        return render(request, LocalSettings.default_skin + '/404.html', {}, status=404)
+    else:
+        if 'type' in exception:
+            if exception['type'] == "WikiPageNotFound":
+                if 'categories' in exception:
+                    return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '해당 문서가 존재하지 않습니다.', 'title': exception['title'], 'categories': exception['categories']['categories'], 'page': exception['categories']['page'], 'num_pages': exception['categories']['num_pages']}, status=404)
+                else:
+                    return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '해당 문서가 존재하지 않습니다.', 'title': exception['title']}, status=404)
+            elif exception['type'] == "WikiRevisionNotFound":
+                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '해당 리비전이 존재하지 않습니다.', 'title': exception['title']}, status=404)
+            elif exception['type'] == "ErrorUserPage":
+                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '사용자 문서는 본인만 편집 가능합니다.', 'title': exception['title']})
+            elif exception['type'] == "BacklinkNotFound":
+                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '역링크가 존재하지 않습니다.', 'title': exception['title']})
+            elif exception['type'] == "ContributionNotFound":
+                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '기여가 존재하지 않습니다.', 'editor': exception['editor']})
+        
+
+## 회원 ##
+
+# 회원가입
+class signup(CreateView):
+    template_name = LocalSettings.default_skin + '/signup.html'
+    form_class = UserCreationForm
+    success_url = "/?alert=successSignup"
+
+# 기여 
 class ContributionView(ListView):
     template_name = LocalSettings.default_skin + '/contribution.html'
     context_object_name = 'contributions'
@@ -548,37 +590,7 @@ class ContributionView(ListView):
                 raise Http404(json.dumps({'type': 'UserNotFound', 'template_name': 'contribution.html', 'editor': self.kwargs['editor']}))
             except Revision.DoesNotExist:
                 raise Http404(json.dumps({'type': 'ContributionNotFound', 'template_name': 'contribution.html', 'editor': self.kwargs['editor']}))
-        
-  
-# 404 페이지
-def page_not_found(request, exception):
-    try:
-        exception = json.loads(str(exception))
-    except json.decoder.JSONDecodeError:
-        return render(request, LocalSettings.default_skin + '/404.html', {}, status=404)
-    else:
-        if 'type' in exception:
-            if exception['type'] == "WikiPageNotFound":
-                if 'categories' in exception:
-                    return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '해당 문서가 존재하지 않습니다.', 'title': exception['title'], 'categories': exception['categories']['categories'], 'page': exception['categories']['page'], 'num_pages': exception['categories']['num_pages']}, status=404)
-                else:
-                    return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '해당 문서가 존재하지 않습니다.', 'title': exception['title']}, status=404)
-            elif exception['type'] == "WikiRevisionNotFound":
-                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '해당 리비전이 존재하지 않습니다.', 'title': exception['title']}, status=404)
-            elif exception['type'] == "ErrorUserPage":
-                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '사용자 문서는 본인만 편집 가능합니다.', 'title': exception['title']})
-            elif exception['type'] == "BacklinkNotFound":
-                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '역링크가 존재하지 않습니다.', 'title': exception['title']})
-            elif exception['type'] == "ContributionNotFound":
-                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '기여가 존재하지 않습니다.', 'editor': exception['editor']})
-        
-
-## 회원 ##
-class signup(CreateView):
-    template_name = LocalSettings.default_skin + '/signup.html'
-    form_class = UserCreationForm
-    success_url = "/?alert=successSignup"
-
+    
         
 ## 공통 함수 ##
 def get_namespace(title):
