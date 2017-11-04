@@ -13,7 +13,7 @@ Including another URLconf
     1. Import the include() function: from django.conf.urls import url, include
     2. Add a URL to urlpatterns:  url(r'^blog/', include('blog.urls'))
 """
-from django.conf.urls import include, url, handler404
+from django.conf.urls import include, url, handler404, handler403
 from django.contrib import admin
 from mywiki import views as wiki_views
 from django.conf import settings
@@ -32,6 +32,7 @@ urlpatterns = [
 ]
 
 handler404 = wiki_views.page_not_found
+handler403 = wiki_views.permission_denied
 
 # if settings.DEBUG:
 import debug_toolbar

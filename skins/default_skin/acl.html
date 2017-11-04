@@ -29,30 +29,35 @@
                                     읽기:
                                     <select class="form-control" name="read">
                                         <option value="everyone" {% if acl.read == 'everyone' %}selected{% endif %}>모두</option>
+                                        <option value="member" {% if acl.read == 'member' %}selected{% endif %}>회원</option>
                                         <option value="staff" {% if acl.read == 'staff' %}selected{% endif %}>관리자</option>
                                         <option value="superuser" {% if acl.read == 'superuser' %}selected{% endif %}>소유자</option>
                                     </select>
                                     편집:
                                     <select class="form-control" name="edit">
                                         <option value="everyone" {% if acl.edit == 'everyone' %}selected{% endif %}>모두</option>
+                                        <option value="member" {% if acl.edit == 'member' %}selected{% endif %}>회원</option>
                                         <option value="staff" {% if acl.edit == 'staff' %}selected{% endif %}>관리자</option>
                                         <option value="superuser" {% if acl.edit == 'superuser' %}selected{% endif %}>소유자</option>
                                     </select>
                                     삭제:
                                     <select class="form-control" name="delete">
                                         <option value="everyone" {% if acl.delete == 'everyone' %}selected{% endif %}>모두</option>
+                                        <option value="member" {% if acl.delete == 'member' %}selected{% endif %}>회원</option>
                                         <option value="staff" {% if acl.delete == 'staff' %}selected{% endif %}>관리자</option>
                                         <option value="superuser" {% if acl.delete == 'superuser' %}selected{% endif %}>소유자</option>
                                     </select>
                                     토론:
                                     <select class="form-control" name="discuss">
                                         <option value="everyone" {% if acl.discuss == 'everyone' %}selected{% endif %}>모두</option>
+                                        <option value="member" {% if acl.discuss == 'member' %}selected{% endif %}>회원</option>
                                         <option value="staff" {% if acl.discuss == 'staff' %}selected{% endif %}>관리자</option>
                                         <option value="superuser" {% if acl.discuss == 'superuser' %}selected{% endif %}>소유자</option>
                                     </select>
                                     이동:
                                     <select class="form-control" name="rename">
                                         <option value="everyone" {% if acl.rename == 'everyone' %}selected{% endif %}>모두</option>
+                                        <option value="member" {% if acl.rename == 'member' %}selected{% endif %}>회원</option>
                                         <option value="staff" {% if acl.rename == 'staff' %}selected{% endif %}>관리자</option>
                                         <option value="superuser" {% if acl.rename == 'superuser' %}selected{% endif %}>소유자</option>
                                     </select>

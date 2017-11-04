@@ -3,7 +3,7 @@ from django.shortcuts import render, get_object_or_404, redirect
 # HTTP
 from django.http import HttpResponse, HttpResponseNotFound, HttpResponseRedirect, Http404
 # 예외
-from django.core.exceptions import ObjectDoesNotExist
+from django.core.exceptions import ObjectDoesNotExist, PermissionDenied
 from django.db import IntegrityError
 # 뷰
 from django.contrib.auth.forms import UserCreationForm
@@ -53,7 +53,9 @@ class WikiView(TemplateView):
             page = Page.objects.get(title=self.kwargs['title'], is_deleted=False)
         except ObjectDoesNotExist:
             raise Http404(json.dumps({'type': 'WikiPageNotFound', 'template_name': 'wiki.html', 'title': self.kwargs['title']}))
-            
+        
+        acl_check(self.request, page.acl, 'read', self.kwargs['title'])
+        
         if 'rev' in self.request.GET:
             rev = self.request.GET['rev']
         else:
@@ -178,6 +180,8 @@ class EditView(TemplateView):
             context['section'] = 0
             return context
         else:
+            acl_check(self.request, page.acl, 'edit', self.kwargs['title'])
+            
             if page.is_created == True:
                 context['text'] = Revision.objects.filter(page=page).order_by('-id').first().text
             else:
@@ -210,7 +214,7 @@ class EditView(TemplateView):
         
         text = request.POST['text']
         
-        if 'section' in request.POST:
+        if request.POST['section']:
             section = int(request.POST['section'])
         else:
             section = 0
@@ -219,21 +223,18 @@ class EditView(TemplateView):
             Page(title=self.kwargs['title'], namespace=namespace, is_created=True).save()
         except IntegrityError:
             page = Page.objects.get(title=self.kwargs['title'])
-            if page.is_created == True:
-                pro_revision = Revision.objects.filter(page=page).order_by('-id').first()
-                pro_parser = NamuMarkParser(pro_revision.text, self.kwargs['title'])
-                
-                # 단락 편집
-                if section > 0:
-                    text = self.__section(request, pro_parser, section)
-                
-                rev = pro_revision.rev + 1
-                increase = len(text) - len(pro_revision.text)
-            else:
-                rev = 1
-                increase = len(text)
-                pro_parser = None
-                page.is_created = True
+            
+            acl_check(request, page.acl, 'edit', self.kwargs['title'])
+            
+            pro_revision = Revision.objects.filter(page=page).order_by('-id').first()
+            pro_parser = NamuMarkParser(pro_revision.text, self.kwargs['title'])
+            
+            # 단락 편집
+            if section > 0:
+                text = self.__section(request, pro_parser, section)
+            
+            rev = pro_revision.rev + 1
+            increase = len(text) - len(pro_revision.text)
                 
             if page.is_deleted == True:
                 page.is_deleted = False
@@ -278,6 +279,8 @@ class RawView(View):
         except ObjectDoesNotExist:
             return HttpResponseNotFound()
             
+        acl_check(request, page.acl, 'read', self.kwargs['title'])
+            
         if 'rev' in request.GET:
             rev = request.GET['rev']
         else:
@@ -301,6 +304,8 @@ class DiffView(TemplateView):
             page = Page.objects.get(title=self.kwargs['title'], is_deleted=False, is_created=True)
         except ObjectDoesNotExist:
             raise Http404(json.dumps({'type': 'WikiPageNotFound', 'template_name': 'diff.html', 'title': self.kwargs['title']}))
+            
+        acl_check(self.request, page.acl, 'read', self.kwargs['title'])
             
         if not 'rev' in self.request.GET or not 'oldrev' in self.request.GET:
             raise Http404(json.dumps({'type': 'WikiRevisionNotFound', 'template_name': 'diff.html', 'title': self.kwargs['title']}))
@@ -360,6 +365,8 @@ class RevertView(TemplateView):
         except ObjectDoesNotExist:
             raise Http404(json.dumps({'type': 'WikiPageNotFound', 'template_name': 'revert.html', 'title': self.kwargs['title']}))
             
+        acl_check(self.request, page.acl, 'edit', self.kwargs['title'])
+            
         try:
             revision = Revision.objects.get(page=page, rev=rev)
         except ObjectDoesNotExist:
@@ -379,6 +386,8 @@ class RevertView(TemplateView):
             page = Page.objects.get(title=self.kwargs['title'])
         except ObjectDoesNotExist:
             return render(self.request, LocalSettings.default_skin + '/revert.html', {'error': '해당 문서가 존재하지 않습니다.', 'title': self.kwargs['title']}, status=404)
+            
+        acl_check(self.request, page.acl, 'edit', self.kwargs['title'])
             
         try:
             revert_revision = Revision.objects.get(page=page, rev=rev)
@@ -418,11 +427,16 @@ class RenameView(UpdateView):
     
     def get_object(self):
         try:
-            return Page.objects.get(title=self.kwargs['title'], is_created=True)
+            page = Page.objects.get(title=self.kwargs['title'], is_created=True)
         except ObjectDoesNotExist:
             raise Http404(json.dumps({'type': 'WikiPageNotFound', 'template_name': 'rename.html', 'title': self.kwargs['title']}))
+            
+        acl_check(self.request, page.acl, 'rename', self.kwargs['title'])
+        
+        return page
     
     def form_valid(self, form):
+        acl_check(self.request, self.object.acl, 'rename', self.kwargs['title'])
         namespace = get_namespace(self.request.POST['title'])
         if self.object.namespace == 2 or namespace == 2:
             return render(request, LocalSettings.default_skin + '/rename.html', {'title': title, 'error': '사용자 문서는 이동할 수 없습니다.'})
@@ -507,11 +521,16 @@ class DeleteView(UpdateView):
 
     def get_object(self):
         try:
-            return Page.objects.get(title=self.kwargs['title'], is_created=True, is_deleted=False)
+            page = Page.objects.get(title=self.kwargs['title'], is_created=True, is_deleted=False)
         except ObjectDoesNotExist:
             raise Http404(json.dumps({'type': 'WikiPageNotFound', 'template_name': 'delete.html', 'title': self.kwargs['title']}))
+        
+        acl_check(self.request, page.acl, 'delete', self.kwargs['title'])
+        
+        return page
 
     def form_valid(self, form):
+        acl_check(self.request, self.object.acl, 'delete', self.kwargs['title'])
         if self.object.namespace == 2:
             return render(request, LocalSettings.default_skin + '/rename.html', {'title': title, 'error': '사용자 문서는 삭제할 수 없습니다.'})
         pro_revision = Revision.objects.filter(page=self.object).order_by('-id').first()
@@ -531,67 +550,7 @@ class RecentChangesView(ListView):
     paginate_by = 20
     model = Revision
     ordering = ['-id']
-
- 
-# 404 페이지
-def page_not_found(request, exception):
-    try:
-        exception = json.loads(str(exception))
-    except json.decoder.JSONDecodeError:
-        return render(request, LocalSettings.default_skin + '/404.html', {}, status=404)
-    else:
-        if 'type' in exception:
-            if exception['type'] == "WikiPageNotFound":
-                if 'categories' in exception:
-                    return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '해당 문서가 존재하지 않습니다.', 'title': exception['title'], 'categories': exception['categories']['categories'], 'page': exception['categories']['page'], 'num_pages': exception['categories']['num_pages']}, status=404)
-                else:
-                    return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '해당 문서가 존재하지 않습니다.', 'title': exception['title']}, status=404)
-            elif exception['type'] == "WikiRevisionNotFound":
-                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '해당 리비전이 존재하지 않습니다.', 'title': exception['title']}, status=404)
-            elif exception['type'] == "ErrorUserPage":
-                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '사용자 문서는 본인만 편집 가능합니다.', 'title': exception['title']}, status=403)
-            elif exception['type'] == "BacklinkNotFound":
-                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '역링크가 존재하지 않습니다.', 'title': exception['title']}, status=404)
-            elif exception['type'] == "ContributionNotFound":
-                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '기여가 존재하지 않습니다.', 'editor': exception['editor']}, status=404)
-        
-
-## 회원 ##
-
-# 회원가입
-class signup(CreateView):
-    template_name = LocalSettings.default_skin + '/signup.html'
-    form_class = UserCreationForm
-    success_url = "/?alert=successSignup"
-
-# 기여 
-class ContributionView(ListView):
-    template_name = LocalSettings.default_skin + '/contribution.html'
-    context_object_name = 'contributions'
-    paginate_by = 20
     
-    def get_queryset(self):
-        try:
-            ipaddress.ip_address(self.kwargs['editor'])
-        except ValueError:
-            # 회원
-            try:
-                editor = User.objects.get(username=self.kwargs['editor'])
-                return Revision.objects.filter(user_id=editor).order_by('-id').all()
-            except User.DoesNotExist:
-                raise Http404(json.dumps({'type': 'UserNotFound', 'template_name': 'contribution.html', 'editor': self.kwargs['editor']}))
-            except Revision.DoesNotExist:
-                raise Http404(json.dumps({'type': 'ContributionNotFound', 'template_name': 'contribution.html', 'editor': self.kwargs['editor']}))
-        else:
-            # IP 사용자
-            try:
-                editor = Ip.objects.get(ip=self.kwargs['editor'])
-                return Revision.objects.filter(ip=editor).order_by('-id').all()
-            except Ip.DoesNotExist:
-                raise Http404(json.dumps({'type': 'UserNotFound', 'template_name': 'contribution.html', 'editor': self.kwargs['editor']}))
-            except Revision.DoesNotExist:
-                raise Http404(json.dumps({'type': 'ContributionNotFound', 'template_name': 'contribution.html', 'editor': self.kwargs['editor']}))
-                
 # ACL
 @method_decorator(staff_member_required(login_url='login'), name='dispatch')
 class ACLView(TemplateView):
@@ -633,6 +592,76 @@ class ACLView(TemplateView):
         Revision(text=pro_revision.text, page=page, comment= str(acl) + '으로 ACL 변경: ' + request.POST['comment'], rev=pro_revision.rev + 1, increase=0, user=editor['user'], ip=editor['ip']).save()
         
         return HttpResponseRedirect(reverse('view', kwargs={'title': self.kwargs['title']}) + '?alert=successACL') 
+
+ 
+## 회원 ##
+
+# 회원가입
+class signup(CreateView):
+    template_name = LocalSettings.default_skin + '/signup.html'
+    form_class = UserCreationForm
+    success_url = "/?alert=successSignup"
+
+# 기여 
+class ContributionView(ListView):
+    template_name = LocalSettings.default_skin + '/contribution.html'
+    context_object_name = 'contributions'
+    paginate_by = 20
+    
+    def get_queryset(self):
+        try:
+            ipaddress.ip_address(self.kwargs['editor'])
+        except ValueError:
+            # 회원
+            try:
+                editor = User.objects.get(username=self.kwargs['editor'])
+                return Revision.objects.filter(user_id=editor).order_by('-id').all()
+            except User.DoesNotExist:
+                raise Http404(json.dumps({'type': 'UserNotFound', 'template_name': 'contribution.html', 'editor': self.kwargs['editor']}))
+            except Revision.DoesNotExist:
+                raise Http404(json.dumps({'type': 'ContributionNotFound', 'template_name': 'contribution.html', 'editor': self.kwargs['editor']}))
+        else:
+            # IP 사용자
+            try:
+                editor = Ip.objects.get(ip=self.kwargs['editor'])
+                return Revision.objects.filter(ip=editor).order_by('-id').all()
+            except Ip.DoesNotExist:
+                raise Http404(json.dumps({'type': 'UserNotFound', 'template_name': 'contribution.html', 'editor': self.kwargs['editor']}))
+            except Revision.DoesNotExist:
+                raise Http404(json.dumps({'type': 'ContributionNotFound', 'template_name': 'contribution.html', 'editor': self.kwargs['editor']}))
+                
+                
+## 오류 ##
+
+# 404 페이지
+def page_not_found(request, exception):
+    try:
+        exception = json.loads(str(exception))
+    except json.decoder.JSONDecodeError:
+        return render(request, LocalSettings.default_skin + '/404.html', {}, status=404)
+    else:
+        if 'type' in exception:
+            if exception['type'] == "WikiPageNotFound":
+                if 'categories' in exception:
+                    return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '해당 문서가 존재하지 않습니다.', 'title': exception['title'], 'categories': exception['categories']['categories'], 'page': exception['categories']['page'], 'num_pages': exception['categories']['num_pages']}, status=404)
+                else:
+                    return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '해당 문서가 존재하지 않습니다.', 'title': exception['title']}, status=404)
+            elif exception['type'] == "WikiRevisionNotFound":
+                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '해당 리비전이 존재하지 않습니다.', 'title': exception['title']}, status=404)
+            elif exception['type'] == "ErrorUserPage":
+                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '사용자 문서는 본인만 편집 가능합니다.', 'title': exception['title']}, status=403)
+            elif exception['type'] == "BacklinkNotFound":
+                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '역링크가 존재하지 않습니다.', 'title': exception['title']}, status=404)
+            elif exception['type'] == "ContributionNotFound":
+                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '기여가 존재하지 않습니다.', 'editor': exception['editor']}, status=404)
+
+def permission_denied(request, exception):
+    try:
+        exception = json.loads(str(exception))
+    except json.decoder.JSONDecodeError:
+        return render(request, LocalSettings.default_skin + '/403.html', {}, status=403)
+    else:
+        return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '권한이 없습니다.', 'title': exception['title']}, status=403)
     
         
 ## 공통 함수 ##
@@ -724,4 +753,22 @@ def save_category(each_category, page_id):
         else:
             each_category_page.category += str(page_id) + ','
         each_category_page.save()
-        
+  
+def acl_check(request, page_acl, action, title):
+    if page_acl == None:
+        return
+    
+    acl = json.loads(page_acl)
+    if acl[action] == 'everyone':
+        return
+    elif acl[action] == 'member':
+        if request.user.is_active:
+            return
+    elif acl[action] == 'staff':
+        if request.user.is_staff:
+            return
+    elif acl[action] == 'superuser':
+        if request.user.is_superuser:
+            return
+    
+    raise PermissionDenied(json.dumps({'template_name': action + '.html', 'title': title}))
