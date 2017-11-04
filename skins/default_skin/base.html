@@ -151,6 +151,8 @@
                         되돌리기 완료
                     {% elif request.GET.alert == "successDelete" %}
                         삭제 완료
+                    {% elif request.GET.alert == "successACL" %}
+                        ACL 변경 완료
                     {% endif %}
                     </div>
                 {% endif %}

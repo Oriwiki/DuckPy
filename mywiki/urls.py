@@ -31,4 +31,6 @@ urlpatterns = [
     url(r'^contribution/$', RedirectView.as_view(url=reverse_lazy('view', kwargs={'title': frontpage}))),
     url(r'^contribution/(?P<editor>.*)/$', ContributionView.as_view(), name='contribution'),
     url(r'^recentchanges/$', RecentChangesView.as_view(), name='recentchanges'),
+    url(r'^acl/$', RedirectView.as_view(url=reverse_lazy('view', kwargs={'title': frontpage}))),
+    url(r'^acl/(?P<title>.*)/$', ACLView.as_view(), name='acl'),
 ]

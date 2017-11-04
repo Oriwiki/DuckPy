@@ -1,0 +1,69 @@
+{% extends "default_skin/base.html" %}
+{% block head %}
+        <title>"{{title}}" ACL - {{PROJECT_NAME}}</title>
+{% endblock head %}
+{% block content %}
+
+            <!--Sidebar-->
+                {% include "default_skin/sidebar.html" with function="acl" %}
+            <!--/.Sidebar-->
+            
+            <!--Main column-->
+            <div class="col-lg-8">
+
+                <!--First row-->
+                <div class="row wow fadeIn" data-wow-delay="0.4s">
+                    <div class="col-lg-12">
+                        <div class="divider-new">
+                            <h2 class="h2-responsive" id="title">{{title}}</h2>
+                        </div>
+                        {% if error %}
+                            <div class="alert alert-danger">
+                                <strong>오류!</strong>
+                                {{ error }}
+                            </div>
+                        {% endif %}
+                            <div>
+                                <form action="" method="post">
+                                    {% csrf_token %}
+                                    읽기:
+                                    <select class="form-control" name="read">
+                                        <option value="everyone" {% if acl.read == 'everyone' %}selected{% endif %}>모두</option>
+                                        <option value="staff" {% if acl.read == 'staff' %}selected{% endif %}>관리자</option>
+                                        <option value="superuser" {% if acl.read == 'superuser' %}selected{% endif %}>소유자</option>
+                                    </select>
+                                    편집:
+                                    <select class="form-control" name="edit">
+                                        <option value="everyone" {% if acl.edit == 'everyone' %}selected{% endif %}>모두</option>
+                                        <option value="staff" {% if acl.edit == 'staff' %}selected{% endif %}>관리자</option>
+                                        <option value="superuser" {% if acl.edit == 'superuser' %}selected{% endif %}>소유자</option>
+                                    </select>
+                                    삭제:
+                                    <select class="form-control" name="delete">
+                                        <option value="everyone" {% if acl.delete == 'everyone' %}selected{% endif %}>모두</option>
+                                        <option value="staff" {% if acl.delete == 'staff' %}selected{% endif %}>관리자</option>
+                                        <option value="superuser" {% if acl.delete == 'superuser' %}selected{% endif %}>소유자</option>
+                                    </select>
+                                    토론:
+                                    <select class="form-control" name="discuss">
+                                        <option value="everyone" {% if acl.discuss == 'everyone' %}selected{% endif %}>모두</option>
+                                        <option value="staff" {% if acl.discuss == 'staff' %}selected{% endif %}>관리자</option>
+                                        <option value="superuser" {% if acl.discuss == 'superuser' %}selected{% endif %}>소유자</option>
+                                    </select>
+                                    이동:
+                                    <select class="form-control" name="rename">
+                                        <option value="everyone" {% if acl.rename == 'everyone' %}selected{% endif %}>모두</option>
+                                        <option value="staff" {% if acl.rename == 'staff' %}selected{% endif %}>관리자</option>
+                                        <option value="superuser" {% if acl.rename == 'superuser' %}selected{% endif %}>소유자</option>
+                                    </select>
+                                    <input type="text" name="comment" placeholder="요약">
+                                    <input type="submit" class="btn btn-default" name="acl" value="저장">
+                                </form>
+                            </div>
+
+                </div>
+                <!--/.First row-->
+                
+                
+
+{% endblock content %}

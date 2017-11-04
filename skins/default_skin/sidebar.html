@@ -9,6 +9,9 @@
             <a href="{% url 'backlink' title=title %}" class="list-group-item {% if function == 'backlink' %}active{% endif %}">역링크</a>
             <a href="{% url 'delete' title=title %}" class="list-group-item {% if function == 'delete' %}active{% endif %}">삭제</a>
             <a href="/discuss/{{title|urlencode}}" class="list-group-item {% if function == 'discuss' %}active{% endif %}">토론</a>
+            {% if user.is_active and user.is_staff %}
+                <a href="{% url 'acl' title=title %}" class="list-group-item {% if function == 'acl' %}active{% endif %}">ACL</a>
+            {% endif %}
         </div>
     </div>
     

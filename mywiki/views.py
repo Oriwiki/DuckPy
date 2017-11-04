@@ -18,6 +18,8 @@ from .models import *
 # 기타 도구
 from django.core.paginator import Paginator, EmptyPage
 from django.core.urlresolvers import reverse
+from django.contrib.admin.views.decorators import staff_member_required
+from django.utils.decorators import method_decorator
 # 기타
 from NamuMarkParser import NamuMarkParser
 from bs4 import BeautifulSoup
@@ -522,13 +524,14 @@ class DeleteView(UpdateView):
     def get_success_url(self):
         return reverse('view', kwargs={'title': self.request.POST['title']}) + '?alert=successDelete'
  
-        
+# 최근 변경 내역        
 class RecentChangesView(ListView):
     template_name = LocalSettings.default_skin + '/recentchanges.html'
     context_object_name = 'changes'
     paginate_by = 20
     model = Revision
     ordering = ['-id']
+
  
 # 404 페이지
 def page_not_found(request, exception):
@@ -546,11 +549,11 @@ def page_not_found(request, exception):
             elif exception['type'] == "WikiRevisionNotFound":
                 return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '해당 리비전이 존재하지 않습니다.', 'title': exception['title']}, status=404)
             elif exception['type'] == "ErrorUserPage":
-                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '사용자 문서는 본인만 편집 가능합니다.', 'title': exception['title']})
+                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '사용자 문서는 본인만 편집 가능합니다.', 'title': exception['title']}, status=403)
             elif exception['type'] == "BacklinkNotFound":
-                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '역링크가 존재하지 않습니다.', 'title': exception['title']})
+                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '역링크가 존재하지 않습니다.', 'title': exception['title']}, status=404)
             elif exception['type'] == "ContributionNotFound":
-                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '기여가 존재하지 않습니다.', 'editor': exception['editor']})
+                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '기여가 존재하지 않습니다.', 'editor': exception['editor']}, status=404)
         
 
 ## 회원 ##
@@ -588,6 +591,48 @@ class ContributionView(ListView):
                 raise Http404(json.dumps({'type': 'UserNotFound', 'template_name': 'contribution.html', 'editor': self.kwargs['editor']}))
             except Revision.DoesNotExist:
                 raise Http404(json.dumps({'type': 'ContributionNotFound', 'template_name': 'contribution.html', 'editor': self.kwargs['editor']}))
+                
+# ACL
+@method_decorator(staff_member_required(login_url='login'), name='dispatch')
+class ACLView(TemplateView):
+    template_name = LocalSettings.default_skin + '/acl.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super(ACLView, self).get_context_data(**kwargs)
+        try:
+            page = Page.objects.get(title=self.kwargs['title'], is_deleted=False, is_created=True)
+        except ObjectDoesNotExist:
+            raise Http404(json.dumps({'type': 'WikiPageNotFound', 'template_name': 'acl.html', 'title': self.kwargs['title']}))
+        
+        if page.acl != None:
+            context['acl'] = json.loads(page.acl)
+        
+        return context
+    
+    def post(self, request, *args, **kwargs):
+        try:
+            page = Page.objects.get(title=self.kwargs['title'], is_deleted=False, is_created=True)
+        except ObjectDoesNotExist:
+            raise Http404(json.dumps({'type': 'WikiPageNotFound', 'template_name': 'acl.html', 'title': self.kwargs['title']}))
+        
+        acl = {
+            'read': request.POST['read'],
+            'edit': request.POST['edit'],
+            'delete': request.POST['delete'],
+            'discuss': request.POST['discuss'],
+            'rename': request.POST['rename']
+        }
+        
+        page.acl = json.dumps(acl)
+        
+        page.save()
+        
+        pro_revision = Revision.objects.filter(page=page).order_by('-id').first()
+        editor = get_user(request)
+        
+        Revision(text=pro_revision.text, page=page, comment= str(acl) + '으로 ACL 변경: ' + request.POST['comment'], rev=pro_revision.rev + 1, increase=0, user=editor['user'], ip=editor['ip']).save()
+        
+        return HttpResponseRedirect(reverse('view', kwargs={'title': self.kwargs['title']}) + '?alert=successACL') 
     
         
 ## 공통 함수 ##
