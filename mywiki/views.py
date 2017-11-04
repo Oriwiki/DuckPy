@@ -754,7 +754,21 @@ def save_category(each_category, page_id):
             each_category_page.category += str(page_id) + ','
         each_category_page.save()
   
-def acl_check(request, page_acl, action, title):
+def acl_check(request, page_acl, action, title, template_name=None):
+    if action == 'read' and not template_name:
+        template_name = 'wiki'
+    elif not template_name:
+        template_name = action
+
+    namespace = get_namespace(title)
+    if action != 'read' and action != 'discuss':
+        if namespace == 1 or namespace == 5:
+            raise PermissionDenied(json.dumps({'template_name': template_name + '.html', 'title': title})) 
+        if namespace == 2:
+            if not request.user.is_active or request.user.username != re.sub('\.(css|js)$', '', title[4:]):
+                raise PermissionDenied(json.dumps({'template_name': template_name + '.html', 'title': title})) 
+                
+                
     if page_acl == None:
         return
     
@@ -771,4 +785,4 @@ def acl_check(request, page_acl, action, title):
         if request.user.is_superuser:
             return
     
-    raise PermissionDenied(json.dumps({'template_name': action + '.html', 'title': title}))
+    raise PermissionDenied(json.dumps({'template_name': template_name + '.html', 'title': title}))
