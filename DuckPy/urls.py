@@ -19,6 +19,7 @@ from mywiki import views as wiki_views
 from django.conf import settings
 from django.contrib.auth import views as auth_views
 import LocalSettings
+from django.conf.urls.static import static
 
 urlpatterns = [
     url(r'^admin/', admin.site.urls),

@@ -19,6 +19,7 @@ class Revision(models.Model):
     page = models.ForeignKey('page', on_delete=models.CASCADE)
     rev = models.PositiveIntegerField(blank=False)
     increase = models.IntegerField(blank=False)
+    file = models.FileField(null=True)
     
 class Ip(models.Model):
     ip = models.CharField(unique=True, blank=False, max_length=15)

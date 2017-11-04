@@ -92,6 +92,9 @@ class WikiView(TemplateView):
         else:
             soup = BeautifulSoup(NamuMarkParser(revision.text, self.kwargs['title']).parse(), 'html.parser')
             context['parse'] = soup.prettify()
+            
+            if page.namespace == 3 and revision.file:
+                context['parse'] = '<img class="wiki-image" src="' + revision.file.url + '">' + context['parse']
         
         return context
         
@@ -592,8 +595,51 @@ class ACLView(TemplateView):
         Revision(text=pro_revision.text, page=page, comment= str(acl) + '으로 ACL 변경: ' + request.POST['comment'], rev=pro_revision.rev + 1, increase=0, user=editor['user'], ip=editor['ip']).save()
         
         return HttpResponseRedirect(reverse('view', kwargs={'title': self.kwargs['title']}) + '?alert=successACL') 
+        
+# 파일 업로드
+class UploadView(CreateView):
+    template_name = LocalSettings.default_skin + '/upload.html'
+    model = Revision
+    fields = []
+    title = '파일:'
+    
+    def form_valid(self, form):
+        # 미리보기
+        if 'preview' in self.request.POST:
+            soup = BeautifulSoup(NamuMarkParser(self.request.POST['text'], '').parse(), "html.parser")
+            return render(self.request, LocalSettings.default_skin + '/upload.html', {'title': self.request.POST['title'], 'text': self.request.POST['text'], 'preview': soup.prettify()})
+            
+            
+        if not 'file' in self.request.FILES:
+            return render(self.request, LocalSettings.default_skin + '/upload.html', {'title': self.request.POST['title'], 'text': self.request.POST['text'], 'error': '파일을 첨부하여 주십시오.'})
+    
+        if not self.request.POST['title']:
+            self.title += self.request.FILES['file'].name
+        else:
+            self.title += self.request.POST['title']
+    
+    
+        editor = get_user(self.request)
+        
+        
+        Page(title=self.title, namespace=3, is_created=True).save()
+        page = Page.objects.get(title=self.title)
+        
+        form.instance.comment = '새 파일 업로드: ' + self.request.POST['comment']
+        form.instance.text = self.request.POST['text']
+        form.instance.rev = 1
+        form.instance.increase = len(self.request.POST['text'])
+        form.instance.page = page
+        form.instance.user = editor['user']
+        form.instance.ip = editor['ip']
+        form.instance.file = self.request.FILES['file']
+        
+        return super(UploadView, self).form_valid(form)
 
- 
+    def get_success_url(self):
+        return reverse('view', kwargs={'title': self.title}) + '?alert=successUpload'
+        
+        
 ## 회원 ##
 
 # 회원가입

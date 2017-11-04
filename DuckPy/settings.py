@@ -158,3 +158,6 @@ LOGGING = {
         },
     }
 }
+
+MEDIA_URL = '/static/images/'
+MEDIA_ROOT = os.path.join(BASE_DIR, 'static/images')
