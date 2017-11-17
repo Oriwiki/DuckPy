@@ -136,6 +136,7 @@ class NamuMarkParser:
         line = text
     
         line = self.__text_curly_bracket(line)
+        line = self.__text_image(line)
         line = self.__text_link(line)
         line = self.__text_foramting(line)
         line = self.__text_anchor(line)
@@ -1232,6 +1233,48 @@ class NamuMarkParser:
                 return Page.objects.filter(is_created=True, namespace=2).count()
             elif namespace == LocalSettings.project_name:
                 return Page.objects.filter(is_created=True, namespace=5).count()
+                
+    def __text_image(self, text):
+        if not "[[" in text:
+            return text
+    
+        greet = QuotedString("[[파일:", endQuoteChar="]]")
+        for i in greet.searchString(text):
+            for n in i:
+                if '[[파일:' + n + ']]' in text:
+                    n_split = n.split('|', 1)
+                
+                    try:
+                        page = Page.objects.get(title='파일:' + n_split[0], namespace=3, is_created=True, is_deleted=False)
+                        revision = Revision.objects.filter(page=page).order_by('-id').first()
+                    except ObjectDoesNotExist:
+                        text = text.replace('[[파일:' + n + ']]', '[[:파일:' + n_split[0] + ']]')
+                    else:
+                        width = height = None
+                        align = 'normal'
+                        if len(n_split) > 1:
+                            for opt in n_split[1].split('&'):
+                                opt_val = opt.split('=')
+                                
+                                if opt_val[0] == 'width':
+                                    width = opt_val[1]
+                                elif opt_val[0] == 'height':
+                                    height = opt_val[1]
+                                elif opt_val[0] == 'align':
+                                    align = opt_val[1]
+                                        
+                        html = '<a class="wiki-link-internal" href="' + reverse('view', kwargs={'title': '파일:' + n_split[0]}) +'" title="파일:' + n_split[0] + '"><span class="wiki-image-align-' + align + '"><span class="wiki-image-wrapper"><img class="wiki-image" src="' + revision.file.url + '"'
+                        if width:
+                            html += ' width=' + width
+                        if height:
+                            html += ' height=' + height
+                        html += '></span></span></a>'
+                            
+                    
+                        text = text.replace('[[파일:' + n + ']]', html)
+                            
+            
+        return text
         
         
     def __cleanhtml(self, raw_html):
