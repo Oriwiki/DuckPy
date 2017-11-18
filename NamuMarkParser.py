@@ -51,7 +51,6 @@ class NamuMarkParser:
         
         end_time = time.time()
         print('parse 처리 시간: ', end_time - start_time)
-        print(text)
         
         return text
         
