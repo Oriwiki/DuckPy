@@ -25,3 +25,10 @@ class Ip(models.Model):
     ip = models.CharField(unique=True, blank=False, max_length=15)
     user = models.ForeignKey('auth.user', on_delete=models.SET_NULL, null=True)
     
+class Block(models.Model):
+    blocked_user = models.ForeignKey('auth.user', on_delete=models.SET_NULL, null=True, related_name='blocked_user')
+    blocked_ip = models.ForeignKey('ip', on_delete=models.SET_NULL, null=True)
+    blockDate = models.DateTimeField(auto_now_add=True)
+    period = models.DateField(blank=False)
+    comment = models.CharField(null=True, max_length=255)
+    admin = models.ForeignKey('auth.user', on_delete=models.SET_NULL, null=True, related_name='admin')
