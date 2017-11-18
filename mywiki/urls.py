@@ -34,4 +34,6 @@ urlpatterns = [
     url(r'^acl/$', RedirectView.as_view(url=reverse_lazy('view', kwargs={'title': frontpage}))),
     url(r'^acl/(?P<title>.*)/$', ACLView.as_view(), name='acl'),
     url(r'^upload/$', UploadView.as_view(), name='upload'),
+    url(r'^block/$', BlockView.as_view()),
+    url(r'^block/(?P<editor>.*)/$', BlockView.as_view(), name='block'),
 ]

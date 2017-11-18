@@ -1,0 +1,43 @@
+{% extends "default_skin/base.html" %}
+{% block head %}
+        <title>사용자 차단 - {{PROJECT_NAME}}</title>
+{% endblock head %}
+{% block content %}
+
+            <!--Main column-->
+            <div class="col-lg-12">
+
+                <!--First row-->
+                <div class="row wow fadeIn" data-wow-delay="0.4s">
+                    <div class="col-lg-12">
+                        <div class="divider-new">
+                            <h2 class="h2-responsive" id="title">사용자 차단</h2>
+                        </div>
+                        {% if view.kwargs.error or error %}
+                            <div class="alert alert-danger">
+                                <strong>오류!</strong>
+                                {% if error %}
+                                    {{ error }}
+                                {% else %}
+                                    {{ view.kwargs.error }}
+                                {% endif %}
+                            </div>
+                        {% endif %}
+                            <div>
+                                <form action="" method="post">
+                                    {% csrf_token %}
+                                    <input type="text" name="target" placeholder="차단할 사용자 이름 또는 IP" value="{% if data.target %}{{data.target}}{% elif editor %}{{editor}}{% else %}{{view.kwargs.editor}}{% endif %}" required>
+                                    
+                                    차단 기한:
+                                    <input type="date" name="period" value="{{data.period}}" required>
+                                    <input type="text" name="comment" value="{{data.comment}}" placeholder="요약" required>
+                                    <input type="submit" class="btn btn-default" name="acl" value="저장">
+                                </form>
+                            </div>
+
+                </div>
+                <!--/.First row-->
+                
+                
+
+{% endblock content %}

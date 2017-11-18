@@ -155,6 +155,8 @@
                         ACL 변경 완료
                     {% elif request.GET.alert == "successUpload" %}
                         파일 올리기 완료
+                    {% elif request.GET.alert == "successBlock" %}
+                        사용자 차단 완료
                     {% endif %}
                     </div>
                 {% endif %}

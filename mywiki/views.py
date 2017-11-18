@@ -33,6 +33,7 @@ from random import choice
 from ipware.ip import get_ip
 import ipaddress
 import json
+from datetime import datetime
 
 
 ## 위키 ##
@@ -676,6 +677,63 @@ class ContributionView(ListView):
             except Revision.DoesNotExist:
                 raise Http404(json.dumps({'type': 'ContributionNotFound', 'template_name': 'contribution.html', 'editor': self.kwargs['editor']}))
                 
+# 차단
+@method_decorator(staff_member_required(login_url='login'), name='dispatch')
+class BlockView(CreateView):
+    template_name = LocalSettings.default_skin + '/block.html'
+    model = Block
+    fields = ['comment', 'period']
+    
+    def form_valid(self, form):
+        if not form.data['target']:
+            return self.form_invalid(form)
+            
+        try:
+            ipaddress.ip_address(form.data['target'])
+        except ValueError:
+            # 회원
+            try:
+                target = User.objects.get(username=form.data['target'])
+            except ObjectDoesNotExist:
+                raise Http404(json.dumps({'type': 'UserNotFound', 'template_name': 'block.html', 'editor': form.data['target']}))
+            else:
+                form.instance.blocked_user = target
+                self.success_url = reverse('view', kwargs={'title': '사용자:' + form.data['target']}) + '?alert=successBlock'
+        else:
+            # IP
+            try:
+                target = Ip.objects.get(ip=form.data['target'])
+            except ObjectDoesNotExist:
+                raise Http404(json.dumps({'type': 'UserNotFound', 'template_name': 'block.html', 'editor': form.data['target']}))
+            else:
+                form.instance.blocked_ip = target
+                self.success_url = reverse('contribution', kwargs={'editor': form.data['target']}) + '?alert=successBlock'
+                
+        date = form.data['period'].split('-')
+        if datetime.today() >= datetime(int(date[0]), int(date[1]), int(date[2])):
+            return render(self.request, self.template_name, {'error': '차단 기한이 잘못되었습니다.', 'data': form.data})
+        
+        form.instance.admin = self.request.user
+        
+            
+        return super(BlockView, self).form_valid(form)    
+            
+    
+    def form_invalid(self, form):
+        error = ""
+        for each_error in form._errors:
+            if each_error == 'period':
+                error += '차단 기한을 입력해주십시오. '
+            elif each_error == 'comment':
+                error += '차단 사유를 입력해주십시오. '
+        if not form.data['target']:
+            error += '차단할 대상을 입력해주십시오. '
+        
+        self.kwargs['error'] = error
+                
+        return super(BlockView, self).form_invalid(form)
+    
+                
                 
 ## 오류 ##
 
@@ -700,6 +758,8 @@ def page_not_found(request, exception):
                 return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '역링크가 존재하지 않습니다.', 'title': exception['title']}, status=404)
             elif exception['type'] == "ContributionNotFound":
                 return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '기여가 존재하지 않습니다.', 'editor': exception['editor']}, status=404)
+            elif exception['type'] == 'UserNotFound':
+                return render(request, LocalSettings.default_skin + '/' + exception['template_name'], {'error': '해당 사용자가 존재하지 않습니다.', 'editor': exception['editor']}, status=404)
 
 def permission_denied(request, exception):
     try:
